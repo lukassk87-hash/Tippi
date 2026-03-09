@@ -1,6 +1,6 @@
 {
-  "appId": "de.pokemon.app",
-  "appName": "pokemon",
+  "appId": "de.tippi.app",
+  "appName": "tippi",
   "webDir": "www",
   "bundledWebRuntime": false
 }
