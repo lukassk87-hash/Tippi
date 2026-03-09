@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Merkspiel – Bild-Icons</title>
+  <title>Merkspiel – Auto-Shrink Random Icons</title>
   <style>
     body {
       margin: 0;
@@ -17,13 +17,10 @@
       display: none;
       z-index: 5;
       image-rendering: auto;
-      /* WICHTIG: KEINE width/height hier! */
     }
 
     .hitbox-debug {
       position: absolute;
-      width: 150px;
-      height: 150px;
       border-radius: 50%;
       background: rgba(200,200,200,0.25);
       pointer-events: none;
@@ -33,7 +30,7 @@
 
     #info {
       position: fixed;
-      top: 10px;
+      top: 40px; /* weiter unten */
       left: 10px;
       color: white;
       font-size: 18px;
@@ -54,7 +51,7 @@
 
     #nextRoundBtn {
       position: fixed;
-      bottom: 120px; /* höher */
+      bottom: 120px;
       left: 50%;
       transform: translateX(-50%);
       padding: 15px 25px;
@@ -73,14 +70,20 @@
 
 <div id="info">Fehler: 0 / 3 – Runde 1</div>
 <div id="countdown"></div>
-<button id="nextRoundBtn">Nächste Runde starten</button>
+<button id="nextRoundBtn">Start</button>
 
 <script>
-  const DEBUG = false;
+  const DEBUG = true;
 
   const IMG_START = "resources/start.jpg";
   const IMG_HIT   = "resources/hit.jpg";
   const IMG_MISS  = "resources/miss.jpg";
+
+  const SAFE_TOP = 75;
+  const SAFE_BOTTOM = 75;
+
+  const MAX_ICON_SIZE = 75;
+  const MIN_ICON_SIZE = 20;
 
   const info = document.getElementById("info");
   const countdown = document.getElementById("countdown");
@@ -96,58 +99,96 @@
   let remaining = 0;
   let tapEnabled = false;
 
-  const ICON_SIZE = 75;
-  const HIT_RADIUS = 75;
-  const MIN_DISTANCE = HIT_RADIUS * 2;
-
-  const SAFE_TOP = 75;
-  const SAFE_BOTTOM = 75;
+  let ICON_SIZE = MAX_ICON_SIZE;
+  let HIT_RADIUS = ICON_SIZE;
 
   nextBtn.addEventListener("click", () => {
     nextBtn.style.display = "none";
     spawnIcons();
   });
 
+  function tryPlaceIcons(count) {
+    const screenW = window.innerWidth;
+    const screenH = window.innerHeight;
+
+    const newPositions = [];
+
+    for (let i = 0; i < count; i++) {
+      let attempts = 0;
+      let placed = false;
+
+      while (!placed && attempts < 200) {
+        attempts++;
+
+        const cx = Math.random() * (screenW - ICON_SIZE) + ICON_SIZE / 2;
+        const cy = Math.random() * (screenH - SAFE_TOP - SAFE_BOTTOM - ICON_SIZE)
+                   + SAFE_TOP + ICON_SIZE / 2;
+
+        let ok = true;
+
+        for (const p of newPositions) {
+          const dx = cx - p.x;
+          const dy = cy - p.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          // KORREKTE Kollisionsprüfung
+          if (dist < HIT_RADIUS * 2) {
+            ok = false;
+            break;
+          }
+        }
+
+        if (ok) {
+          newPositions.push({ x: cx, y: cy, hit: false });
+          placed = true;
+        }
+      }
+
+      if (!placed) return null;
+    }
+
+    return newPositions;
+  }
+
   function spawnIcons() {
-    positions = [];
+    let count = round;
+
+    ICON_SIZE = MAX_ICON_SIZE;
+    HIT_RADIUS = ICON_SIZE;
+
+    let placed = null;
+
+    while (!placed) {
+      placed = tryPlaceIcons(count);
+
+      if (!placed) {
+        ICON_SIZE *= 0.9;
+        ICON_SIZE = Math.max(ICON_SIZE, MIN_ICON_SIZE);
+        HIT_RADIUS = ICON_SIZE;
+
+        if (ICON_SIZE === MIN_ICON_SIZE) {
+          placed = tryPlaceIcons(count);
+          if (!placed) {
+            alert("Zu viele Icons – Runde kann nicht dargestellt werden.");
+            return;
+          }
+        }
+      }
+    }
+
+    positions = placed;
+
     icons = [];
     hitboxes = [];
     tapEnabled = false;
     remaining = round;
 
-    const screenW = window.innerWidth;
-    const screenH = window.innerHeight;
-
-    for (let i = 0; i < round; i++) {
-      let cx, cy;
-      let valid = false;
-
-      while (!valid) {
-        cx = Math.random() * (screenW - ICON_SIZE) + ICON_SIZE / 2;
-        cy = Math.random() * (screenH - SAFE_TOP - SAFE_BOTTOM - ICON_SIZE)
-             + SAFE_TOP + ICON_SIZE / 2;
-
-        valid = true;
-
-        for (const p of positions) {
-          const dx = cx - p.x;
-          const dy = cy - p.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-
-          if (dist < MIN_DISTANCE) {
-            valid = false;
-            break;
-          }
-        }
-      }
-
-      positions.push({ x: cx, y: cy, hit: false });
-
+    for (const pos of positions) {
       const icon = document.createElement("img");
       icon.src = IMG_START;
       icon.className = "icon";
-      icon.style.left = (cx - ICON_SIZE / 2) + "px";
-      icon.style.top = (cy - ICON_SIZE / 2) + "px";
+      icon.style.left = (pos.x - ICON_SIZE / 2) + "px";
+      icon.style.top = (pos.y - ICON_SIZE / 2) + "px";
       icon.style.width = ICON_SIZE + "px";
       icon.style.height = ICON_SIZE + "px";
       document.body.appendChild(icon);
@@ -155,8 +196,10 @@
 
       const hb = document.createElement("div");
       hb.className = "hitbox-debug";
-      hb.style.left = (cx - HIT_RADIUS) + "px";
-      hb.style.top = (cy - HIT_RADIUS) + "px";
+      hb.style.width = (HIT_RADIUS * 2) + "px";
+      hb.style.height = (HIT_RADIUS * 2) + "px";
+      hb.style.left = (pos.x - HIT_RADIUS) + "px";
+      hb.style.top = (pos.y - HIT_RADIUS) + "px";
       if (DEBUG) hb.style.display = "block";
       document.body.appendChild(hb);
       hitboxes.push(hb);
@@ -227,6 +270,9 @@
           setTimeout(() => {
             round++;
             info.textContent = `Fehler: ${mistakes} / 3 – Runde ${round}`;
+
+            // Button-Text abhängig von Runde
+            nextBtn.textContent = round === 1 ? "Start" : "Nächste Runde";
             clearIcons();
             nextBtn.style.display = "block";
           }, 500);
@@ -243,7 +289,10 @@
 
       if (mistakes >= 3) {
         gameActive = false;
-        info.textContent = "Game Over – tippe zum Neustart";
+        info.textContent = "Game Over";
+
+        nextBtn.textContent = "Neustart";
+        nextBtn.style.display = "block";
       }
     }
   }
@@ -277,6 +326,7 @@
     gameActive = true;
     info.textContent = "Fehler: 0 / 3 – Runde 1";
     clearIcons();
+    nextBtn.textContent = "Start";
     nextBtn.style.display = "block";
   }
 
