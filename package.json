@@ -1,0 +1,13 @@
+{
+  "name": "pokemon-superversion",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "echo 'Using existing www folder'"
+  },
+  "dependencies": {
+    "@capacitor/core": "latest"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "latest"
+  }
+}

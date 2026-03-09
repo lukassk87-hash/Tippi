@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pokémon Textadventure</title>
+  <style>
+    body {
+      font-family: 'Fredoka One', 'Segoe UI', Arial, sans-serif;
+      background: #fff;
+      color: #222;
+      padding: 20px;
+      text-align: center;
+      margin: 0;
+      min-height: 100vh;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 {
+      color: #3C5AA6;
+      text-shadow: 2px 2px 0 #FFCB05, 0 2px #2A75BB;
+      font-size: 2.2rem;
+      margin-bottom: 18px;
+      margin-top: 1.2rem;
+      font-family: 'Fredoka One', Arial, sans-serif;
+      font-weight: 900;
+      letter-spacing: 1px;
+    }
+    #game {
+      background: #fff;
+      border-radius: 19px;
+      box-shadow: 0 6px 23px rgba(44,90,166,0.22);
+      padding: 16px 8px 16px 8px;
+      max-width: 420px;
+      width: 100%;
+      margin: 0 auto;
+      font-size: 1.085rem;
+      color: #222;
+      line-height: 1.45;
+      margin-bottom: 140px;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+      box-sizing: border-box;
+      position: relative;
+      border: 4px solid #2A75BB;
+    }
+    #game p { margin: 9px 0; }
+    .desc {
+      color: #2A75BB;
+      font-size: .98em;
+      margin-bottom: 6px;
+      font-style: italic;
+      font-weight: 400;
+    }
+    .pokemon-img {
+      height: 90px;
+      vertical-align: middle;
+      margin-right: 9px;
+      image-rendering: pixelated;
+      max-width:90px;
+    }
+    hr {
+      border: 0;
+      border-top: 2px solid #3C5AA6;
+      margin: 16px 0;
+    }
+    .btn {
+      background: #FFF;
+      border: 3px solid #2A75BB;
+      color: #222;
+      font-family: 'Fredoka One', Arial, sans-serif;
+      font-weight: bold;
+      border-radius: 15px;
+      padding: 15px 18px;
+      margin: 12px auto 0 auto;
+      box-shadow: 0 3px 8px rgba(44,90,166,0.10);
+      display: block;
+      width: 98%;
+      max-width: 99%;
+      box-sizing: border-box;
+      font-size: 1.15rem;
+      cursor: pointer;
+      transition: background .2s, color .2s, box-shadow .2s;
+      text-align: center;
+      letter-spacing: .5px;
+    }
+    .btn:active, .btn:focus {
+      background: #2A75BB;
+      color: #fff;
+      outline: none;
+    }
+    .btn:hover {
+      background: #3C5AA6;
+      color: #fff;
+      box-shadow: 0 6px 16px rgba(44,90,166,0.22);
+    }
+    .btn:disabled {
+      opacity: .59;
+      cursor: not-allowed;
+    }
+    .btn.ort {
+      background: linear-gradient(90deg, #FFCB05 80%, #2A75BB 100%);
+      border: 3px solid #3C5AA6;
+      color: #222;
+      text-align: left;
+      font-size: 1.08rem;
+      font-weight: bold;
+      padding: 15px 18px;
+      margin: 12px auto 0 auto;
+      box-sizing: border-box;
+      width: 98%;
+      border-radius: 16px;
+      box-shadow: 0 3px 14px rgba(44,90,166,0.09);
+      min-height: 56px;
+    }
+    .btn.ort:hover, .btn.ort:focus {
+      background: linear-gradient(90deg, #2A75BB 70%, #FFCB05 100%);
+      color: #fff;
+    }
+    #footerWuerfel {
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 14px;
+      background: #fff;
+      border: 3px solid #3C5AA6;
+      border-radius: 17px;
+      padding: 18px 14px 18px 14px;
+      z-index: 1000;
+      width: 96vw;
+      max-width: 420px;
+      box-shadow: 0 4px 22px rgba(44,90,166,0.13);
+      text-align: center;
+      font-family: 'Fredoka One', Arial, sans-serif;
+    }
+    #wuerfelTitel {
+      font-weight: 700;
+      font-size: 1.12rem;
+      margin-bottom: 5px;
+      color: #2A75BB;
+      letter-spacing: .5px;
+    }
+    #wuerfelGewinn {
+      font-weight: 550;
+      margin-bottom: 8px;
+      color: #3C5AA6;
+    }
+    #wuerfelAnzeige {
+      font-size: 2.6rem;
+      margin-bottom: 7px;
+      user-select: none;
+    }
+    #wuerfelErgebnis {
+      font-weight: 700;
+      font-size: 1.25rem;
+      color: #222;
+      min-height: 1.3em;
+      margin-bottom: 10px;
+    }
+    @media (max-width: 600px) {
+      h1 { font-size: 1.33rem; }
+      #game {
+        font-size: 0.98rem;
+        padding: 9px 1vw 12px 1vw;
+        margin-bottom: 155px;
+        min-width: unset;
+      }
+      .btn, .btn.ort {
+        padding: 15px 5px;
+        font-size: 1.06rem;
+        border-width: 2px;
+        min-width: 98%;
+        margin: 11px 0 0 0;
+        border-radius: 15px;
+      }
+      #footerWuerfel {
+        padding: 16px 9px;
+        max-width: 100vw;
+      }
+    }
+    input#nameInput {
+      border-radius: 10px;
+      border: 2px solid #2A75BB;
+      padding: 11px 12px;
+      font-size: 1.14rem;
+      margin: 10px auto 18px auto;
+      width: 92%;
+      box-sizing: border-box;
+      font-family: 'Fredoka One', Arial, sans-serif;
+    }
+    /* Ergänzung im CSS für Lebensherzen-Darstellung */
+.pokemon-leben {
+  display: inline-block;
+  margin-left: 8px;
+  color: #d81e06; /* Herzrot */
+  font-size: 1.25rem;
+  user-select: none;
+}
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet" />
+</head>
+<body>
+<h1>Pokémon<br>Textadventure</h1>
+<div id="game"></div>
+<div id="footerWuerfel">
+  <div id="wuerfelTitel"></div>
+  <div id="wuerfelGewinn"></div>
+  <div id="wuerfelAnzeige">🎲</div>
+  <div id="wuerfelErgebnis">&nbsp;</div>
+  <button id="wuerfelWurf" class="btn">Würfel werfen</button>
+  <button id="okButton" class="btn" style="display:none;">OK</button>
+</div>
+<script>
+// ---------- Konstanten ----------
+const starterPokemonList = [
+  {name:"Bisasam", typ:"Pflanze", ndex:1, evolutionStage:1},
+  {name:"Glumanda", typ:"Feuer", ndex:4, evolutionStage:1},
+  {name:"Schiggy", typ:"Wasser", ndex:7, evolutionStage:1},
+  {name:"Endivie", typ:"Pflanze", ndex:152, evolutionStage:1},
+  {name:"Feurigel", typ:"Feuer", ndex:155, evolutionStage:1},
+  {name:"Karnimani", typ:"Wasser", ndex:158, evolutionStage:1},
+  {name:"Geckarbor", typ:"Pflanze", ndex:252, evolutionStage:1},
+  {name:"Flemmli", typ:"Feuer", ndex:255, evolutionStage:1},
+  {name:"Hydropi", typ:"Wasser", ndex:258, evolutionStage:1},
+  {name:"Chelast", typ:"Pflanze", ndex:387, evolutionStage:1},
+  {name:"Panflam", typ:"Feuer", ndex:390, evolutionStage:1},
+  {name:"Plinfa", typ:"Wasser", ndex:393, evolutionStage:1},
+  {name:"Serpifeu", typ:"Pflanze", ndex:495, evolutionStage:1},
+  {name:"Floink", typ:"Feuer", ndex:498, evolutionStage:1},
+  {name:"Ottaro", typ:"Wasser", ndex:501, evolutionStage:1},
+
+  {name:"Raupy", typ:"Käfer", ndex:10, evolutionStage:1},
+  {name:"Hornliu", typ:"Käfer", ndex:13, evolutionStage:1},
+  {name:"Taubsi", typ:"Flug", ndex:16, evolutionStage:1},
+  {name:"Abra", typ:"Psycho", ndex:63, evolutionStage:1},
+  {name:"Machollo", typ:"Kampf", ndex:66, evolutionStage:1},
+  {name:"Kleinstein", typ:"Gestein", ndex:74, evolutionStage:1},
+  {name:"Nebulak", typ:"Geist", ndex:92, evolutionStage:1},
+  {name:"Dratini", typ:"Drache", ndex:147, evolutionStage:1},
+  {name:"Voltilamm", typ:"Elektro", ndex:179, evolutionStage:1},
+  {name:"Larvitar", typ:"Gestein", ndex:246, evolutionStage:1},
+  {name:"Samurzel", typ:"Pflanze", ndex:273, evolutionStage:1},
+  {name:"Pionskora", typ:"Käfer", ndex:451, evolutionStage:1},
+  {name:"Nidoran♀", typ:"Gift", ndex:29, evolutionStage:1},
+  {name:"Nidoran♂", typ:"Gift", ndex:32, evolutionStage:1},
+  {name:"Bauz", typ:"Pflanze", ndex:722, evolutionStage:1}
+];
+
+const entwicklungenList = [
+  {name:"Pichu", typ:"Elektro", ndex:172, evolutionStage:1},
+  {name:"Piondrago", typ:"Käfer",
+  ndex:452, evolutionStage:2},
+  {name:"Bisaknosp", typ:"Pflanze", ndex:2, evolutionStage:2},
+  {name:"Bisaflor", typ:"Pflanze", ndex:3, evolutionStage:3},
+  {name:"Lorblatt", typ:"Pflanze", ndex:153, evolutionStage:2},
+  {name:"Meganie", typ:"Pflanze", ndex:154, evolutionStage:3},
+  {name:"Reptain", typ:"Pflanze", ndex:253, evolutionStage:2},
+  {name:"Gewaldro", typ:"Pflanze", ndex:254, evolutionStage:3},
+  {name:"Chelcarain", typ:"Pflanze", ndex:388, evolutionStage:2},
+  {name:"Chelterrar", typ:"Pflanze", ndex:389, evolutionStage:3},
+  {name:"Efoserp", typ:"Pflanze", ndex:496, evolutionStage:2},
+  {name:"Serpiroyal", typ:"Pflanze", ndex:497, evolutionStage:3},
+  {name:"Glutexo", typ:"Feuer", ndex:5, evolutionStage:2},
+  {name:"Glurak", typ:"Feuer", ndex:6, evolutionStage:3},
+  {name:"Igelavar", typ:"Feuer", ndex:156, evolutionStage:2},
+  {name:"Tornupto", typ:"Feuer", ndex:157, evolutionStage:3},
+  {name:"Jungglut", typ:"Feuer", ndex:256, evolutionStage:2},
+  {name:"Lohgock", typ:"Feuer", ndex:257, evolutionStage:3},
+  {name:"Panpyro", typ:"Feuer", ndex:391, evolutionStage:2},
+  {name:"Panferno", typ:"Feuer", ndex:392, evolutionStage:3},
+  {name:"Ferkokel", typ:"Feuer", ndex:499, evolutionStage:2},
+  {name:"Flambirex", typ:"Feuer", ndex:500, evolutionStage:3},
+  {name:"Schillok", typ:"Wasser", ndex:8, evolutionStage:2},
+  {name:"Turtok", typ:"Wasser", ndex:9, evolutionStage:3},
+  {name:"Tyracroc", typ:"Wasser", ndex:159, evolutionStage:2},
+  {name:"Impergator", typ:"Wasser", ndex:160, evolutionStage:3},
+  {name:"Moorabbel", typ:"Wasser", ndex:259, evolutionStage:2},
+  {name:"Sumpex", typ:"Wasser", ndex:260, evolutionStage:3},
+  {name:"Pliprin", typ:"Wasser", ndex:394, evolutionStage:2},
+  {name:"Impoleon", typ:"Wasser", ndex:395, evolutionStage:3},
+  {name:"Zwottronin", typ:"Wasser", ndex:502, evolutionStage:2},
+  {name:"Admurai", typ:"Wasser", ndex:503, evolutionStage:3},
+  {name:"Safcon", typ:"Käfer", ndex:11, evolutionStage:2},
+  {name:"Smettbo", typ:"Käfer", ndex:12, evolutionStage:3},
+  {name:"Kokuna", typ:"Käfer", ndex:14, evolutionStage:2},
+  {name:"Bibor", typ:"Käfer", ndex:15, evolutionStage:3},
+  {name:"Tauboga", typ:"Flug", ndex:17, evolutionStage:2},
+  {name:"Tauboss", typ:"Flug", ndex:18, evolutionStage:3},
+  {name:"Kadabra", typ:"Psycho", ndex:64, evolutionStage:2},
+  {name:"Simsala", typ:"Psycho", ndex:65, evolutionStage:3},
+  {name:"Maschock", typ:"Kampf", ndex:67, evolutionStage:2},
+  {name:"Machomei", typ:"Kampf", ndex:68, evolutionStage:3},
+  {name:"Georok", typ:"Gestein", ndex:75, evolutionStage:2},
+  {name:"Geowaz", typ:"Gestein", ndex:76, evolutionStage:3},
+  {name:"Alpollo", typ:"Geist", ndex:93, evolutionStage:2},
+  {name:"Gengar", typ:"Geist", ndex:94, evolutionStage:3},
+  {name:"Dragonir", typ:"Drache", ndex:148, evolutionStage:2},
+  {name:"Dragoran", typ:"Drache", ndex:149, evolutionStage:3},
+  {name:"Pikachu", typ:"Elektro", ndex:25, evolutionStage:2},
+  {name:"Raichu", typ:"Elektro", ndex:26, evolutionStage:3},
+  {name:"Waaty", typ:"Elektro", ndex:180, evolutionStage:2},
+  {name:"Ampharos", typ:"Elektro", ndex:181, evolutionStage:3},
+  {name:"Pupitar", typ:"Gestein", ndex:247, evolutionStage:2},
+  {name:"Despotar", typ:"Gestein", ndex:248, evolutionStage:3},
+  {name:"Blanas", typ:"Pflanze", ndex:274, evolutionStage:2},
+  {name:"Tengulist", typ:"Pflanze", ndex:275, evolutionStage:3},
+  {name:"Ninjask", typ:"Käfer", ndex:291, evolutionStage:3},
+  {name:"Arboretoss", typ:"Pflanze", ndex:723, evolutionStage:2},
+  {name:"Silvarro", typ:"Pflanze", ndex:724, evolutionStage:3}, 
+  // Beispiele aus Generation 1 mit je einem Typ
+  {name:"Rattfratz", typ:"Normal", ndex:19, evolutionStage:1},
+  {name:"Rattikarl", typ:"Normal", ndex:20, evolutionStage:2},
+  {name:"Habitak", typ:"Flug", ndex:21, evolutionStage:1},
+  {name:"Ibitak", typ:"Flug", ndex:22, evolutionStage:2},
+  {name:"Rettan", typ:"Gift", ndex:23, evolutionStage:1},
+  {name:"Arbok", typ:"Gift", ndex:24, evolutionStage:2},
+  {name:"Pikachu", typ:"Elektro", ndex:25, evolutionStage:2},
+  {name:"Raichu", typ:"Elektro", ndex:26, evolutionStage:3},
+  {name:"Sandan", typ:"Boden", ndex:27, evolutionStage:1},
+  {name:"Sandamer", typ:"Boden", ndex:28, evolutionStage:2},
+  {name:"Nidorina", typ:"Gift", ndex:30, evolutionStage:2},
+  {name:"Nidoqueen", typ:"Gift", ndex:31, evolutionStage:3},
+  {name:"Nidorino", typ:"Gift", ndex:33, evolutionStage:2},
+  {name:"Nidoking", typ:"Gift", ndex:34, evolutionStage:3},
+  {name:"Piepi", typ:"Fee", ndex:35, evolutionStage:1},
+  {name:"Pixi", typ:"Fee", ndex:36, evolutionStage:2},
+  {name:"Pummeluff", typ:"Normal", ndex:39, evolutionStage:1},
+  {name:"Knuddeluff", typ:"Normal", ndex:40, evolutionStage:2},
+  {name:"Zubat", typ:"Gift", ndex:41, evolutionStage:1},
+  {name:"Golbat", typ:"Gift", ndex:42, evolutionStage:2},
+  {name:"Myrapla", typ:"Pflanze", ndex:43, evolutionStage:1},
+  {name:"Duflor", typ:"Pflanze", ndex:44, evolutionStage:2},
+  {name:"Giflor", typ:"Pflanze", ndex:45, evolutionStage:3},
+
+  // Weitere Beispiele aus späteren Generationen
+  {name:"Fiffyen", typ:"Unlicht", ndex:161, evolutionStage:1},
+  {name:"Magnayen", typ:"Unlicht", ndex:162, evolutionStage:2},
+  {name:"Zigzachs", typ:"Normal", ndex:263, evolutionStage:1},
+  {name:"Geradaks", typ:"Normal", ndex:264, evolutionStage:2},
+  {name:"Waumpel", typ:"Käfer", ndex:265, evolutionStage:1},
+  {name:"Schaloko", typ:"Käfer", ndex:266, evolutionStage:2},
+  {name:"Pudox", typ:"Gestein", ndex:269, evolutionStage:3},
+  {name:"Farbok", typ:"Unlicht", ndex:262, evolutionStage:1},
+  
+  // Legendäre Pokémon (ein Typ, Entwicklungsstufe 3))
+  {name:"Mewtu", typ:"Psycho", ndex:150, evolutionStage:3},
+  {name:"Zapdos", typ:"Elektro", ndex:145, evolutionStage:3},
+  {name:"Arktos", typ:"Eis", ndex:144, evolutionStage:3},
+  {name:"Lavados", typ:"Feuer", ndex:146, evolutionStage:3},
+  {name:"Lugia", typ:"Psycho", ndex:249, evolutionStage:3},
+  {name:"Ho-Oh", typ:"Feuer", ndex:250, evolutionStage:3},
+  {name:"Regirock", typ:"Gestein", ndex:377, evolutionStage:3},
+  {name:"Regice", typ:"Eis", ndex:378, evolutionStage:3},
+  {name:"Registeel", typ:"Stahl", ndex:379, evolutionStage:3},
+  {name:"Dialga", typ:"Stahl", ndex:483, evolutionStage:3},
+  {name:"Palkia", typ:"Wasser", ndex:484, evolutionStage:3},
+  {name:"Heatran", typ:"Feuer", ndex:485, evolutionStage:3},
+  {name:"Cresselia", typ:"Psycho", ndex:488, evolutionStage:3},
+  {name:"Darkrai", typ:"Unlicht", ndex:491, evolutionStage:3},
+  {name:"Zoroark", typ:"Unlicht", ndex:570, evolutionStage:3},
+  {name:"Tornupto", typ:"Feuer", ndex:157, evolutionStage:3},
+  {name:"Reshiram", typ:"Drache", ndex:643, evolutionStage:3},
+  {name:"Zekrom", typ:"Drache", ndex:644, evolutionStage:3},
+  {name:"Xerneas", typ:"Fee", ndex:716, evolutionStage:3},
+  {name:"Yveltal", typ:"Unlicht", ndex:717, evolutionStage:3},
+  {name:"Zygarde", typ:"Drache", ndex:718, evolutionStage:3},
+  {name:"Solgaleo", typ:"Psycho", ndex:791, evolutionStage:3},
+  {name:"Lunala", typ:"Psycho", ndex:792, evolutionStage:3},
+  {name:"Necrozma", typ:"Psycho", ndex:800, evolutionStage:3},
+  {name:"Eternatus", typ:"Gift", ndex:890, evolutionStage:3}
+
+];
+
+const megaPokemonList = [
+  {
+    name: "Mega-Bisaflor",
+    typ: ["Pflanze"],
+    ndex: 3,
+    evolutionStage: 4,
+    megaName: "Mega-Bisaflor",
+    megaSpriteUrl: "https://www.pokewiki.de/images/6/6b/Hauptartwork_003m1.png"
+  },
+  {
+    name: "Mega-Glurak X",
+    typ: ["Feuer"],
+    ndex: 6,
+    evolutionStage: 4,
+    megaName: "Mega-Glurak X",
+    megaSpriteUrl: "https://www.pokewiki.de/images/1/13/Hauptartwork_006m1.png"
+  },
+  {
+    name: "Mega-Turtok",
+    typ: ["Wasser"],
+    ndex: 9,
+    evolutionStage: 4,
+    megaName: "Mega-Turtok",
+    megaSpriteUrl: "https://www.pokewiki.de/images/9/9b/Hauptartwork_009m1.png"
+  },
+  {
+    name: "Mega-Bibor",
+    typ: ["Käfer"],
+    ndex: 15,
+    evolutionStage: 4,
+    megaName: "Mega-Bibor",
+    megaSpriteUrl: "https://www.pokewiki.de/images/8/81/Hauptartwork_015m1.png"
+  },
+  {
+    name: "Mega-Tauboss",
+    typ: ["Flug"],
+    ndex: 18,
+    evolutionStage: 4,
+    megaName: "Mega-Tauboss",
+    megaSpriteUrl: "https://www.pokewiki.de/images/3/3b/Hauptartwork_018m1.png"
+  },
+  {
+    name: "Mega-Simsala",
+    typ: ["Psycho"],
+    ndex: 65,
+    evolutionStage: 4,
+    megaName: "Mega-Simsala",
+    megaSpriteUrl: "https://www.pokewiki.de/images/a/a4/Hauptartwork_065m1.png"
+  },
+  {
+    name: "Mega-Gengar",
+    typ: ["Geist"],
+    ndex: 94,
+    evolutionStage: 4,
+    megaName: "Mega-Gengar",
+    megaSpriteUrl: "https://www.pokewiki.de/images/0/03/Hauptartwork_094m1.png"
+  },
+  {
+    name: "Mega-Ampharos",
+    typ: ["Elektro"],
+    ndex: 181,
+    evolutionStage: 4,
+    megaName: "Mega-Ampharos",
+    megaSpriteUrl: "https://www.pokewiki.de/images/6/6c/Hauptartwork_181m1.png"
+  },
+  {
+    name: "Mega-Despotar",
+    typ: ["Drache"],
+    ndex: 248,
+    evolutionStage: 4,
+    megaName: "Mega-Despotar",
+    megaSpriteUrl: "https://www.pokewiki.de/images/e/eb/Hauptartwork_248m1.png"
+  }
+]; 
+
+
+let aktuelleKampfNummer = 0;
+// Weitere Variablen: z.B. aktuellerSpielerStatus, Punkte, etc.
+
+const allMons = starterPokemonList.concat(entwicklungenList);
+allMons.forEach(p => p.img = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.ndex}.png`);
+
+
+
+
+const trainerList = [
+  {
+    name: "Julia Schulze König",
+    desc: 'Wer da verliert ist selber Schuld <br><img src="https://via.placeholder.com/250?text=Platzhalter" alt="Julia Schulze König" style="object-fit: cover; border: 2px solid #333; border-radius: 12px; max-width: 250px; max-height: 250px; display: block; margin: 10px auto;">'
+  },
+  {
+    name: "Lukas Schulze König",
+    desc: 'Ein strenger Vater, der am liebsten Finn oder Piet besiegt. <br><img src="https://www.tgu-shop.com/thumbnail/14/a0/af/1667904298/Lukas%20Schulze%20K%C3%B6nig%20-%20klein_1920x1920.jpg" alt="Lukas Schulze König" style="object-fit: cover; border: 2px solid #333; border-radius: 12px; max-width: 250px; max-height: 250px; display: block; margin: 10px auto;">'
+  },
+  {
+    name:"Misty",
+    desc:"Temperamentvolle Arenaleiterin aus Azuria City mit Wasserfokus <br><img src='https://www.pokewiki.de/images/5/5b/Misty_LGPE_Artwork.png' alt='Misty' style='object-fit: cover; border: 2px solid #333; border-radius: 12px; max-width: 250px; max-height: 250px; display: block; margin: 10px auto;'>"
+  },
+  {
+    name:"Rocko",
+    desc:"Gesteins-Experte aus Marmoria – stets ein Verlass bei Abenteuern. <br><img src='https://www.pokewiki.de/images/1/12/Rocko_LGPE_Artwork.png' alt='Rocko' style='object-fit: cover; border: 2px solid #333; border-radius: 12px; max-width: 250px; max-height: 250px; display: block; margin: 10px auto;'>"
+  },
+  {
+    name:"Gary",
+    desc:"Wissbegieriger Rivale aus Alabastia mit großem Ehrgeiz. <br><img src='https://www.pokewiki.de/images/2/25/Gary_Reisen_Anime.png' alt='Gary' style='object-fit: cover; border: 2px solid #333; border-radius: 12px; max-width: 250px; max-height: 250px; display: block; margin: 10px auto;'>"
+  },
+  {
+    name:"Cynthia",
+    desc:"Sinnoh-Champ mit strategischem Geschick und Knakrack. <br><img src='https://www.pokewiki.de/images/9/91/SDLP_Cynthia.png' alt='Cynthia' style='object-fit: cover; border: 2px solid #333; border-radius: 12px; max-width: 250px; max-height: 250px; display: block; margin: 10px auto;'>"
+  },
+  {
+    name:"Red",
+    desc:"Legendärer und schweigsamer Pokémon-Trainer aus Kanto. <br><img src='https://www.pokewiki.de/images/c/cb/Rot_LGPE_Artwork.png' alt='Red' style='object-fit: cover; border: 2px solid #333; border-radius: 12px; max-width: 250px; max-height: 250px; display: block; margin: 10px auto;'>"
+  },
+  {
+    name:"Blue",
+    desc:"Rivalisierender Arenaleiter aus Kanto; ehrgeizig und erfahren. <br><img src='https://www.pokewiki.de/images/2/28/Blau_LGPE_Artwork.png' alt='Blue' style='object-fit: cover; border: 2px solid #333; border-radius: 12px; max-width: 250px; max-height: 250px; display: block; margin: 10px auto;'>"
+  },
+  {
+    name:"Lance",
+    desc:"Drachen-Trainer der Top Vier aus Kanto/Johto. <br><img src='https://www.pokewiki.de/images/8/8a/HGSS_Lance_Art.png' alt='Lance' style='object-fit: cover; border: 2px solid #333; border-radius: 12px; max-width: 250px; max-height: 250px; display: block; margin: 10px auto;'>"
+  },
+  {
+    name:"Serena",
+    desc:"Talente Trainerin und Performerin aus Kalos. <br><img src='https://www.pokewiki.de/images/b/b2/Serena.png' alt='Serena' style='object-fit: cover; border: 2px solid #333; border-radius: 12px; max-width: 250px; max-height: 250px; display: block; margin: 10px auto;'>"
+  },
+  {
+    name:"N",
+    desc:"Idealist, der Pokémon aufrichtig liebt und verstehen möchte. <br><img src='https://www.pokewiki.de/images/b/b0/N_S2W2.png' alt='N' style='object-fit: cover; border: 2px solid #333; border-radius: 12px; max-width: 250px; max-height: 250px; display: block; margin: 10px auto;'>"
+  },
+  {
+    name:"Professor Eich",
+    desc:"Legendärer Forscher aus Alabastia. <br><img src='https://www.pokewiki.de/images/e/ed/Professor_Eich_LGPE_Artwork.png' alt='Professor Eich' style='object-fit: cover; border: 2px solid #333; border-radius: 12px; max-width: 250px; max-height: 250px; display: block; margin: 10px auto;'>"
+  },
+  {
+    name:"Giovanni",
+    desc:"Team Rocket Boss und Boden-Arenaleiter. <br><img src='https://www.pokewiki.de/images/4/4c/Giovanni_LGPE_Artwork.png' alt='Giovanni' style='object-fit: cover; border: 2px solid #333; border-radius: 12px; max-width: 250px; max-height: 250px; display: block; margin: 10px auto;'>"
+  },
+  {
+    name:"Lucia",
+    desc:"Koordinatorin aus Sinnoh mit Sinn für Schönheit. <br><img src='https://www.pokewiki.de/images/9/90/SDLP_Lucia.png' alt='Lucia' style='object-fit: cover; border: 2px solid #333; border-radius: 12px; max-width: 250px; max-height: 250px; display: block; margin: 10px auto;'>"
+  },
+  {
+    name:"Marnie",
+    desc:"Zielstrebige Trainerin aus Galar. <br><img src='https://www.pokewiki.de/images/a/aa/Mary.png' alt='Marnie' style='object-fit: cover; border: 2px solid #333; border-radius: 12px; max-width: 250px; max-height: 250px; display: block; margin: 10px auto;'>"
+  },
+  {
+    name:"Rosa",
+    desc:"Freundliche Newcomerin aus Einall. <br><img src='https://www.pokewiki.de/images/8/85/S2W2_Rosy.png' alt='Rosa' style='object-fit: cover; border: 2px solid #333; border-radius: 12px; max-width: 250px; max-height: 250px; display: block; margin: 10px auto;'>"
+  },
+  {
+    name:"Maik",
+    desc:"Feuriger Drilling der Einall-Arena. <br><img src='https://www.pokewiki.de/images/e/e7/Maik_Artwork.png' alt='Chili' style='object-fit: cover; border: 2px solid #333; border-radius: 12px; max-width: 250px; max-height: 250px; display: block; margin: 10px auto;'>"
+  },
+  {
+    name:"Kukui",
+    desc:"Forscher und Liga-Organisator auf Alola. <br><img src='https://www.pokewiki.de/images/0/08/Professor_Kukui.png' alt='Kukui' style='object-fit: cover; border: 2px solid #333; border-radius: 12px; max-width: 250px; max-height: 250px; display: block; margin: 10px auto;'>"
+  },
+  {
+    name:"Sieglinde",
+    desc:"Psycho-jaffe Top Vier-Star aus Hoenn. <br><img src='https://www.pokewiki.de/images/9/9c/Sihgers.jpg' alt='Sieglinde' style='object-fit: cover; border: 2px solid #333; border-radius: 12px; max-width: 250px; max-height: 250px; display: block; margin: 10px auto;'>"
+  },
+  {
+    name:"Troy",
+    desc:"Experte für Stahl-Pokémon und Hoenns Top Vier. <br><img src='https://www.pokewiki.de/images/e/e3/Troy_-_ORAS.png' alt='Troy' style='object-fit: cover; border: 2px solid #333; border-radius: 12px; max-width: 250px; max-height: 250px; display: block; margin: 10px auto;'>"
+  }
+];
+
+
+const ortList = [
+  {name:"Greven",desc:"Heimat von Finn und Piet. Toller Ort für tolle Kinder. "},
+  {name:"Alabastia",desc:"Das beschauliche Startdorf aus Kanto, Ursprungsort vieler Trainer."},
+  {name:"Azuria City",desc:"Die Stadt der Wasserliebhaber mit Kanälen und Arena."},
+  {name:"Marmoria City",desc:"Bekannt für Museum und Gesteins-Arena von Rocko."},
+  {name:"Orania City",desc:"Großer Hafen am Kanto-Meer mit Elektro-Arena."},
+  {name:"Prismania City",desc:"Großes Einkaufszentrum, Sitz von Erika, der Pflanzenleiterin."},
+  {name:"Saffronia City",desc:"Großstadt mit berühmter Silph Co. und Psycho-Arena."},
+  {name:"Lavandia",desc:"Berüchtigt wegen seines Pokémon-Turms und Geistergeschichten."},
+  {name:"Fuchsania City",desc:"Safari-Zone, Heimat der Gift-Arena."},
+  {name:"Zinnoberinsel",desc:"Vulkaninsel mit Pokémon-Labor und Feuer-Arena."},
+  {name:"Vertania City",desc:"Tor zur Pokémon-Liga, Sitz der Boden-Arena von Giovanni."},
+  {name:"Rosalstadt",desc:"Friedliche Stadt in Johto, blühende Gärten überall."},
+  {name:"Auen von Flori",desc:"Blumenreiche Sinnoh-Landschaft voller friedlicher Pokémon."},
+  {name:"Jubelstadt",desc:"Technikzentrale im Zentrum Sinnohs."},
+  {name:"Wiesenflur",desc:"Windkraftdorf in Hoenn mit vielen Windmühlen."},
+  {name:"Trostu",desc:"Sinnoh-Stadt am legendären See."},
+  {name:"Score City",desc:"Metropole in Galar, Heimat der berühmten Arena."},
+  {name:"Brassbury",desc:"Altehrwürdige Stadt mit reicher Geschichte und Arena."},
+  {name:"Romantia City",desc:"Märchenstadt aus Kalos mit herrlichen Feldern."},
+  {name:"Mosaia",desc:"Kultstadt modernster Architektur."},
+  {name:"Kisawa Beach",desc:"Strandparadies aus Alola."},
+  {name:"Coronia City",desc:"Galar-Ort mit Drachen-Arena."},
+  {name:"Twist Mountain",desc:"Einalls schroffe Bergkette, voller Geheimnisse."},
+  {name:"Rayono City",desc:"Einall-Metropole, bekannt für Sport und Elektrobahn."},
+  {name:"Fairy Forest",desc:"Zauberwald aus der Alola-Region."},
+  {name:"Sandgemme",desc:"Friedliches Anfangsdorf in Sinnoh."},
+  {name:"Lillycove City",desc:"Hoenn-Hafenstadt mit Kaufhaus."},
+  {name:"Fluxia City",desc:"Legendärer Ort für Flug- und Pflanzen-Pokémon in Kalos."},
+  {name:"Avenitia",desc:"Ein Platz voller Forschung und einer großen Trainerschule."},
+  {name:"Kantai City",desc:"Alolas maritimer Mittelpunkt."},
+  {name:"Silberberg",desc:"Majestätischer Berg, bekannt für harte Trainerduelle."}
+];
+
+
+
+const effektiv = {
+  Feuer: ["Pflanze", "Eis", "Käfer", "Stahl"],
+  Wasser: ["Feuer", "Boden", "Gestein"],
+  Pflanze: ["Wasser", "Boden", "Gestein"],
+  Elektro: ["Wasser", "Flug"],
+  Flug: ["Pflanze", "Kampf", "Käfer"],
+  Boden: ["Feuer", "Elektro", "Gift", "Gestein", "Stahl"],
+  Kampf: ["Normal", "Eis", "Gestein", "Unlicht", "Stahl"],
+  Gestein: ["Feuer", "Eis", "Flug", "Käfer"],
+  Geist: ["Psycho", "Geist"],
+  Psycho: ["Kampf", "Gift"],
+  Eis: ["Flug", "Pflanze", "Boden", "Drache"],
+  Drache: ["Drache"],
+  Stahl: ["Eis", "Gestein", "Fee"],
+  Gift: ["Pflanze", "Fee"],
+  Unlicht: ["Psycho", "Geist"],
+  Fee: ["Kampf", "Drache", "Unlicht"],
+  Käfer: ["Pflanze", "Psycho", "Unlicht"],
+  Normal: []
+};
+
+
+
+let trainerName = "", spielerPokemon = [], kaempfe = 0, aktuellerOrt = "Startplatz";
+let aktuelleKampfData = null, endKampfModus = false;
+let verbleibendeStarterPool = [], verbleibendeMonsPool = [], verbleibendeTrainerPool = [],
+hatMegaEntwicklung = false; //
+ verbleibendeOrtPool = [];
+
+const gameDiv = document.getElementById("game");
+const footerWuerfel = document.getElementById("footerWuerfel");
+const wuerfelTitel = document.getElementById("wuerfelTitel");
+const wuerfelGewinn = document.getElementById("wuerfelGewinn");
+const wuerfelAnzeige = document.getElementById("wuerfelAnzeige");
+const wuerfelErgebnis = document.getElementById("wuerfelErgebnis");
+const wuerfelWurfBtn = document.getElementById("wuerfelWurf");
+const okButton = document.getElementById("okButton");
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    let j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
+let gesperrtePokemon = [];
+let letzteKampfNummer = 0;
+let letzterTrainerData = null;
+
+function setName() {
+  const val = document.getElementById("nameInput").value.trim();
+  if (!val) return;
+  trainerName = val;
+  waehleStarterPokemon();
+}
+
+
+function initLeben(pokemon) {
+  return { ...pokemon, leben: 1 };
+}
+
+
+
+function start() {
+  spielerPokemon = [];
+  kaempfe = 0;
+  endKampfModus = false;
+  aktuelleKampfData = null;
+  aktuellerOrt = "Startplatz";
+  verbleibendeStarterPool = starterPokemonList.slice();
+  verbleibendeMonsPool = allMons.slice();
+  verbleibendeTrainerPool = trainerList.slice();
+  verbleibendeOrtPool = ortList.slice();
+  letzteKampfNummer = 0;      // Variable zurücksetzen
+  letzterTrainerData = null;  // Variable zurücksetzen
+    hatMegaEntwicklung = false;
+// Ergänzung bei Variablen: Anfangsleben für jedes Pokémon auf 1 setzen
+// Wird später zum Kampfbeginn initialisiert
+
+gameDiv.innerHTML = `
+  <p>Willkommen im Abenteuer! Ich hoffe du bist bereit. <br>Wie heißt du, junger Trainer?</p>
+  <img src="https://www.pokewiki.de/images/6/68/Ash_Kalos.jpg" alt="Ash Kalos" style="display: block; margin: 0 auto 10px; max-width: 100%; height: auto;" />
+  <input id="nameInput" placeholder="Dein Name" autofocus="true" />
+  <button class="btn" onclick="setName()">Weiter</button>
+  <img src="https://www.pokewiki.de/images/b/b9/Itemsprite_Pok%C3%A9ball_PLZA.png" alt="Pokéball" style="display: block; margin: 10px auto 0; max-width: 100px; height: auto;" />
+`;
+  
+  hideWuerfel();
+}
+
+// Spiel starten (nach Vorlagen- und Funktionsdefinition)
+start();
+
+
+function waehleStarterPokemon() {
+  let pool = verbleibendeStarterPool.slice();
+  let selectedTypes = [];
+  let starter = [];
+
+  while (starter.length < 5 && pool.length > 0) {
+    const p = pool[Math.floor(Math.random() * pool.length)];
+    if (!selectedTypes.includes(p.typ)) {
+      selectedTypes.push(p.typ);
+      starter.push({...p});
+    }
+    // Entferne das Pokémon aus dem Pool, egal ob es passt oder nicht, um Endlosschleifen zu vermeiden
+    pool = pool.filter(mon => mon !== p);
+  }
+
+  // Entferne die gewählten Pokémon aus dem Pool
+  for (const s of starter) {
+    verbleibendeMonsPool = verbleibendeMonsPool.filter(mon => mon.name !== s.name);
+  }
+
+  // UI-Logik, um Pokémon anzuzeigen und auszuwählen
+  gameDiv.innerHTML = `<h2>Wähle 3 Pokémon, ${trainerName}!</h2><div id="pokemonAuswahl"></div>`;
+  const container = document.getElementById("pokemonAuswahl");
+  starter.forEach(p => {
+    const btn = document.createElement("div");
+    btn.className = "btn";
+    btn.innerHTML = `<img src="${p.img}" class="pokemon-img">${p.name}`;
+    btn.onclick = () => {
+      if (spielerPokemon.length >= 3 || spielerPokemon.some(pk => pk.name === p.name)) return;
+      spielerPokemon.push({...p});
+      btn.style.background = "#d81e06";
+      btn.style.color = "#fffbea";
+      if (spielerPokemon.length === 3) starteAbenteuer();
+    }
+    container.appendChild(btn);
+  });
+  hideWuerfel();
+}
+
+function starteAbenteuer() {
+  kaempfe = 0;
+  gameDiv.innerHTML = `<div id="log"></div>`;
+  naechsterKampf();
+}
+
+
+const gegnerLebenMap = new Map();
+
+
+
+
+function naechsterKampf() {
+  const log = document.getElementById("log");
+  log.innerHTML = "";
+
+  if (kaempfe === 0) {
+    log.innerHTML += `<p>Dein Abenteuer beginnt ...</p>`;
+  } else {
+    log.innerHTML += `<p>Du bist in ${aktuellerOrt}.</p>`;
+  }
+
+  if (kaempfe >= 10) {
+    endKampfModus = true;
+    finalKampf();
+    return;
+  }
+
+  // Auswahl des Gegners (dein bestehender Code hier)
+  if (kaempfe > letzteKampfNummer || !letzterTrainerData) {
+    let gegnerMon;
+    if (kaempfe < 3) {
+      const starterPool = verbleibendeMonsPool.filter(p => p.evolutionStage === 1);
+      gegnerMon = starterPool[Math.floor(Math.random() * starterPool.length)];
+    } else {
+      const advancedPool = verbleibendeMonsPool.filter(p => p.evolutionStage >= 2);
+      const wahlPool = advancedPool.length > 0 ? advancedPool : verbleibendeMonsPool;
+      gegnerMon = wahlPool[Math.floor(Math.random() * wahlPool.length)];
+    }
+    verbleibendeMonsPool = verbleibendeMonsPool.filter(mon => mon.name !== gegnerMon.name);
+
+    const t = verbleibendeTrainerPool[Math.floor(Math.random() * verbleibendeTrainerPool.length)];
+    verbleibendeTrainerPool = verbleibendeTrainerPool.filter(tr => tr.name !== t.name);
+
+    if (!gegnerLebenMap.has(gegnerMon.name)) {
+      gegnerLebenMap.set(gegnerMon.name, 1);
+    }
+    gegnerMon.leben = gegnerLebenMap.get(gegnerMon.name);
+
+    aktuelleKampfData = { gegnerMon, trainerName: t.name, trainerDesc: t.desc };
+    letzterTrainerData = { trainerName: t.name, trainerDesc: t.desc, gegnerMon };
+    letzteKampfNummer = kaempfe;
+  } else if (aktuelleKampfData == null) {
+    aktuelleKampfData = {
+      gegnerMon: letzterTrainerData.gegnerMon,
+      trainerName: letzterTrainerData.trainerName,
+      trainerDesc: letzterTrainerData.trainerDesc
+    };
+    if (gegnerLebenMap.has(aktuelleKampfData.gegnerMon.name)) {
+      aktuelleKampfData.gegnerMon.leben = gegnerLebenMap.get(aktuelleKampfData.gegnerMon.name);
+    } else {
+      aktuelleKampfData.gegnerMon.leben = 1;
+      gegnerLebenMap.set(aktuelleKampfData.gegnerMon.name, 1);
+    }
+  }
+
+  // Team-Pokémon filtern, die nicht gesperrt sind
+  const verfügbareSpielerPokemon = spielerPokemon.filter(p => !gesperrtePokemon.includes(p.name));
+
+  // Kampf starten mit aktuellen Daten
+  kampfRunde(
+    aktuelleKampfData.gegnerMon,
+    aktuelleKampfData.trainerName,
+    aktuelleKampfData.trainerDesc,
+    verfügbareSpielerPokemon
+  );
+
+  hideWuerfel();
+}
+
+function kampfRunde(gegnerMon, gegnerName, trainerDesc, verfügbareSpielerPokemon) {
+window.scrollTo({ top: 0, behavior: 'smooth' });
+  const log = document.getElementById("log");
+  log.innerHTML = "";
+
+  // Gegnersprite auf Mega prüfen
+  const megaVersion = megaPokemonList.find(m => m.ndex === gegnerMon.ndex && m.evolutionStage === 4);
+  const gegnerBildUrl = (gegnerMon.evolutionStage === 4 && megaVersion) ? megaVersion.megaSpriteUrl : gegnerMon.img;
+
+  // Trainerbeschreibung + Gegneranzeige
+  if (gegnerName && trainerDesc) {
+    log.innerHTML += `<hr><b style="font-size: 1.02em">${gegnerName}</b>: <span class="desc">${trainerDesc}</span><br>`;
+  }
+  log.innerHTML += `<p>Kampf ${kaempfe + 1}: ${gegnerName} setzt <img src="${gegnerBildUrl}" class="pokemon-img" alt="${gegnerMon.name}">${gegnerMon.name} (Leben: <span id="gegnerLeben">${gegnerMon.leben}</span>) ein.</p>`;
+
+  // Spieler-Pokémon Buttons anzeigen inklusive Bild aktualisieren bei Mega-Form
+  verfügbareSpielerPokemon.forEach(p => {
+    // Mega-Sprite bevorzugt, falls Mega
+    const imgUrl = (p.evolutionStage === 4 && p.megaSpriteUrl) ? p.megaSpriteUrl : p.img;
+    const btn = document.createElement("div");
+    btn.className = "btn";
+    btn.innerHTML = `<img src="${imgUrl}" alt="${p.name}" class="pokemon-img">${p.name} <span class="pokemon-leben" id="leben-${p.name}"></span>`;
+    btn.onclick = () => starteKampfRundenAblauf(p, gegnerMon, gegnerName, true);
+    log.appendChild(btn);
+  });
+
+  hideWuerfel();
+}
+
+
+
+function starteKampfRundenAblauf(spielerMon, gegnerMon, gegnerName, spielerBeginnt) {
+  // Suche das aktuelle Pokémon im Team anhand ndex, um die neueste Version zu verwenden
+  const aktuellesSpielerMon = spielerPokemon.find(p => p.ndex === spielerMon.ndex) || spielerMon;
+
+  // Aktuelle Kampf-Daten mit synchronisierten Spieler-Pokémon speichern
+  aktuelleKampfData = { spielerMon: aktuellesSpielerMon, gegnerMon, gegnerName, spielerBeginnt };
+
+  // Anzeigen im UI anpassen
+  wuerfelTitel.textContent = `Kampf: Dein ${aktuellesSpielerMon.name} gegen ${gegnerName}s ${gegnerMon.name}`;
+  wuerfelGewinn.textContent = `Triff mit den gewählten Wahrscheinlichkeiten.`;
+
+  // Kampfrunde starten
+  rundenAngriff(0, aktuellesSpielerMon, gegnerMon, spielerBeginnt);
+}
+
+
+
+function rundenAngriff(rundenNummer, spielerMon, gegnerMon, spielerAktiv) {
+  const log = document.getElementById("log");
+
+  // Gewinnsummen je Zug berechnen
+  const gewinnSummenSpieler = erstelleGewinnSummen(spielerMon, gegnerMon);
+  const gewinnSummenGegner = erstelleGewinnSummen(gegnerMon, spielerMon);
+
+  // Leben definieren bzw. aus Map holen
+  spielerMon.leben = spielerMon.leben || 1;
+  gegnerMon.leben = gegnerMon.leben || gegnerLebenMap.get(gegnerMon.name) || 1;
+
+  // Hinweise beim eigenen Zug
+  if (spielerAktiv) {
+    const typStatus = effektiv[spielerMon.typ]?.includes(gegnerMon.typ) ? 1 :
+                      effektiv[gegnerMon.typ]?.includes(spielerMon.typ) ? -1 : 0;
+    let typHinweis;
+    if (typStatus === 1) typHinweis = `Gute Wahl! Typ ${spielerMon.typ} ist effektiv gegen Typ ${gegnerMon.typ}.`;
+    else if (typStatus === -1) typHinweis = `Schlechte Wahl! Typ ${spielerMon.typ} hat eine Schwäche gegen Typ ${gegnerMon.typ}.`;
+    else typHinweis = `Neutrale Wahl. Kein Typ hat einen Vorteil.`;
+
+    const evoDiff = spielerMon.evolutionStage - (gegnerMon.evolutionStage || 1);
+    let evoHinweis;
+    if (evoDiff > 0) evoHinweis = "Du hast einen Entwicklungsvorteil. Dein Pokémon ist stärker";
+    else if (evoDiff < 0) evoHinweis = "Du hast einen Entwicklungsnachteil. Dein Pokémon ist schwächer";
+    else evoHinweis = "Gleicher Entwicklungsstand";
+
+    wuerfelGewinn.textContent = `Du triffst bei: ${gewinnSummenSpieler.join(", ")}.
+${typHinweis}
+${evoHinweis}`;
+    wuerfelTitel.textContent = `Runde ${rundenNummer + 1}: Dein Angriff mit ${spielerMon.name} gegen ${gegnerMon.name}`;
+    
+    // Text schwarz färben
+    wuerfelGewinn.style.color = "black";
+    wuerfelTitel.style.color = "black";   
+    
+    
+    ;
+  } else {
+    wuerfelGewinn.textContent = `Gegner trifft bei: ${gewinnSummenGegner.join(", ")}.`;
+    wuerfelTitel.textContent = `Runde ${rundenNummer + 1}: Angriff von ${gegnerMon.name}`;
+    
+    // Text rot färben
+    wuerfelGewinn.style.color = "red";
+    wuerfelTitel.style.color = "red";
+  }
+
+  footerWuerfel.style.display = 'block';
+  wuerfelErgebnis.textContent = '';
+  wuerfelAnzeige.textContent = '🎲 🎲';
+
+  wuerfelWurfBtn.style.display = 'inline-block';
+  wuerfelWurfBtn.disabled = false;
+  okButton.style.display = 'none';
+
+  wuerfelWurfBtn.onclick = () => {
+    const wurf1 = Math.floor(Math.random() * 6) + 1;
+    const wurf2 = Math.floor(Math.random() * 6) + 1;
+    const summe = wurf1 + wurf2;
+    wuerfelAnzeige.textContent = `🎲${wurf1} 🎲${wurf2} (Summe: ${summe})`;
+
+    const getroffen = spielerAktiv
+      ? gewinnSummenSpieler.includes(summe)
+      : gewinnSummenGegner.includes(summe);
+
+    wuerfelErgebnis.textContent = getroffen ? "Treffer! 🎯" : "Fehlschlag! ❌";
+
+    wuerfelWurfBtn.style.display = 'none';
+    okButton.style.display = 'inline-block';
+
+    okButton.onclick = () => {
+      if (getroffen) {
+        if (spielerAktiv) {
+          gegnerMon.leben = Math.max(gegnerMon.leben - 1, 0);
+          gegnerLebenMap.set(gegnerMon.name, gegnerMon.leben);
+          log.innerHTML += `<p>Dein ${spielerMon.name} trifft ${gegnerMon.name}. Leben Gegner: ${gegnerMon.leben}</p>`;
+          
+          // Hier die entscheidende Einbindung:
+          if (gegnerMon.leben === 0) {
+            // Aufruf von spielGewonnen, um Sieg, Entwicklung, Weiterleitung zu handhaben
+            spielGewonnen(spielerMon, gegnerMon, wuerfelTitel.textContent.split(" gegen ")[1]);
+            return; // Kampf endet nach Sieg
+          }
+        } else {
+          spielerMon.leben = Math.max(spielerMon.leben - 1, 0);
+          log.innerHTML += `<p style="color:red;">${gegnerMon.name} trifft dein ${spielerMon.name}. Leben Spieler: ${spielerMon.leben}</p>`;
+        }
+      } else {
+        log.innerHTML += `<p style="color:${spielerAktiv ? 'black' : 'red'};">${spielerAktiv ? 'Du' : gegnerMon.name} verfehlte den Angriff.</p>`;
+      }
+
+      wuerfelWurfBtn.style.display = 'inline-block';
+      okButton.style.display = 'none';
+
+      // Spieler-Pokémon besiegt behandeln (unverändert)
+      if (spielerMon.leben === 0) {
+        gesperrtePokemon.push(spielerMon.name);
+        const verfügbarePokemon = spielerPokemon.filter(p => !gesperrtePokemon.includes(p.name));
+        if (verfügbarePokemon.length === 0) {
+          log.innerHTML += `<p>Oh nein! Dein letztes Pokémon ${spielerMon.name} wurde besiegt. Spiel vorbei!</p>`;
+          gameDiv.innerHTML += `<button class="btn" onclick="start()">Neu starten</button>`;
+          hideWuerfel();
+          return;
+        } else {
+          log.innerHTML += `<p>Dein ${spielerMon.name} wurde besiegt und steht nicht mehr zur Verfügung.</p>`;
+          aktuelleKampfData = null;
+          hideWuerfel();
+          naechsterKampf();
+          return;
+        }
+      }
+      
+      // Standardmäßig Angriff wechseln und nächste Runde starten
+      rundenAngriff(rundenNummer + 1, spielerMon, gegnerMon, !spielerAktiv);
+    };
+  };
+}
+
+
+
+// Hilfsfunktion für Gewinnsummen, entsprechend vorh. vorbereitungsPhase Logik kopiert
+
+
+function erstelleGewinnSummen(angreifer, verteidiger) {
+  const evoDiff = angreifer.evolutionStage - (verteidiger.evolutionStage || 1);
+
+  // Korrekte Prüfung, ob der Verteidigertyp im Effektivitäts-Array des Angreifer-Typs ist
+  const spielerHatTypvorteil = effektiv[angreifer.typ]?.includes(verteidiger.typ);
+  const gegnerHatTypvorteil = effektiv[verteidiger.typ]?.includes(angreifer.typ);
+
+  let typStatus = 0;
+  if (spielerHatTypvorteil) typStatus = 1;
+  else if (gegnerHatTypvorteil) typStatus = -1;
+
+  let gewinnSummen;
+
+  if (evoDiff >= 2 && typStatus >= 0) {
+    gewinnSummen = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+  }
+  else if (evoDiff >= 2 && typStatus < 0) {
+    gewinnSummen = [10, 11, 12];
+  }
+  else if (evoDiff === 1 && typStatus === 1) {
+    gewinnSummen = [4, 5, 6, 7, 8, 9, 10, 11, 12];
+  }
+  else if (evoDiff === 1 && typStatus === 0) {
+    gewinnSummen = [5, 6, 7, 8, 9, 10, 11, 12];
+  }
+  else if (evoDiff === 1 && typStatus === -1) {
+    gewinnSummen = [11, 12];
+  }
+  else if (evoDiff === 0 && typStatus === 1) {
+    gewinnSummen = [4, 5, 6, 7, 8, 9, 10, 11, 12];
+  }
+  else if (evoDiff === 0 && typStatus === 0) {
+    gewinnSummen = [5, 6, 7, 8, 9, 10];
+  }
+  else if (evoDiff === 0 && typStatus === -1) {
+    gewinnSummen = [11, 12];
+  }
+  else if (evoDiff === -1 && typStatus === 1) {
+    gewinnSummen = [8, 9, 10];
+  }
+  else if (evoDiff === -1 && typStatus === 0) {
+    gewinnSummen = [10, 11, 12];
+  }
+  else if (evoDiff === -1 && typStatus === -1) {
+    gewinnSummen = [12];
+  }
+  else if (evoDiff <= -2) {
+    gewinnSummen = [12];
+  }
+  else {
+    gewinnSummen = [5, 6, 7, 8, 9, 10];
+  }
+  return gewinnSummen;
+}
+
+
+function vorbereitungsPhase(p, gegnerMon, gegnerName) {
+    aktuelleKampfData = { p, gegnerMon, gegnerName };
+    
+    const evoDiff = p.evolutionStage - (gegnerMon.evolutionStage || 1);
+    const spielerHatTypvorteil = effektiv[p.typ] === gegnerMon.typ;
+    const gegnerHatTypvorteil = effektiv[gegnerMon.typ] === p.typ;
+
+    let typStatus = 0;
+    if (spielerHatTypvorteil) typStatus = 1;
+    else if (gegnerHatTypvorteil) typStatus = -1;
+
+    let gewinnSummen;
+
+    if (evoDiff >= 2 && typStatus >= 0) { // 2 Entwicklungen voraus und kein Typnachteil
+        gewinnSummen = [2,3,4,5,6,7,8,9,10,11,12]; // 100%
+    }
+    else if (evoDiff >= 2 && typStatus < 0) { // 2 Entwicklungen voraus und Typnachteil
+        gewinnSummen = [10,11,12]; // ca. 40%
+    }
+    else if (evoDiff === 1 && typStatus === 1) { // 1 Entwicklung voraus & Typvorteil
+        gewinnSummen = [4,5,6,7,8,9,10,11,12]; // ca. 90%
+    }
+    else if (evoDiff === 1 && typStatus === 0) { // 1 Entwicklung voraus, Typ ausgeglichen
+        gewinnSummen = [5,6,7,8,9,10,11,12]; // ca. 80%
+    }
+    else if (evoDiff === 1 && typStatus === -1) { // 1 Entwicklung voraus, Typnachteil
+        gewinnSummen = [11,12]; // ca. 25%
+    }
+    else if (evoDiff === 0 && typStatus === 1) { // Entwicklung gleich, Typvorteil
+        gewinnSummen = [4,5,6,7,8,9,10,11,12]; // ca. 90%
+    }
+    else if (evoDiff === 0 && typStatus === 0) { // Entwicklung gleich, Typ ausgeglichen
+        gewinnSummen = [5,6,7,8,9,10]; // ca. 50%
+    }
+    else if (evoDiff === 0 && typStatus === -1) { // Entwicklung gleich, Typnachteil
+        gewinnSummen = [11,12]; // ca. 10%
+    }
+    else if (evoDiff === -1 && typStatus === 1) { // 1 Entwicklung zurück, Typvorteil
+        gewinnSummen = [8,9,10]; // ca. 30% vorgeschlagen
+    }
+    else if (evoDiff === -1 && typStatus === 0) { // 1 Entwicklung zurück, Typ ausgeglichen
+        gewinnSummen = [10,11,12]; // ca. 20% vorgeschlagen
+    }
+    else if (evoDiff === -1 && typStatus === -1) { // 1 Entwicklung zurück, Typnachteil
+        gewinnSummen = [12]; // ca. 5% vorgeschlagen
+    }
+    else if (evoDiff <= -2) { // 2 Entwicklungen zurück (unabhängig Typstatus)
+        gewinnSummen = [12]; // sehr geringe Gewinnchance ca. 2-5%
+    }
+    else { // Fallback Standard (ca. 50%)
+        gewinnSummen = [5,6,7,8,9,10]; // ca. 50%
+    }
+
+    showWuerfelBereich(p, gegnerMon, gegnerName, gewinnSummen);
+}
+
+function showWuerfelBereich(p, gegnerMon, gegnerName, gewinnSummen) {
+  aktuelleKampfData = { p, gegnerMon, gegnerName }; // Aktuelle Kampfinfo aktualisieren
+
+  wuerfelTitel.textContent = `Du hast ${p.name} gegen ${gegnerMon.name} gewählt.`;
+  wuerfelGewinn.textContent = `Du gewinnst bei: ${gewinnSummen.join(", ")}.`;
+  wuerfelAnzeige.textContent = '🎲 🎲';
+  wuerfelErgebnis.textContent = '';
+
+  footerWuerfel.style.display = 'block';
+
+  // Würfelwerfen-Button sichtbar machen und aktivieren
+  wuerfelWurfBtn.style.display = 'inline-block';
+  wuerfelWurfBtn.disabled = false;
+
+  // OK-Button ausblenden
+  okButton.style.display = 'none';
+
+  // Vorherige Event-Handler entfernen, um Fehler zu vermeiden
+  wuerfelWurfBtn.onclick = null;
+  okButton.onclick = null;
+
+  // Neuen Event-Handler für Würfelwurf setzen
+  wuerfelWurfBtn.onclick = () => {
+    const wurf1 = Math.floor(Math.random() * 6) + 1;
+    const wurf2 = Math.floor(Math.random() * 6) + 1;
+    const summe = wurf1 + wurf2;
+    wuerfelAnzeige.textContent = `🎲${wurf1} 🎲${wurf2} (Summe: ${summe})`;
+    wuerfelErgebnis.textContent = '';
+
+    // Würfelwurf-Button erst ausblenden, OK-Button anzeigen
+    wuerfelWurfBtn.style.display = 'none';
+    okButton.style.display = 'inline-block';
+
+    // OK-Button Event-Handler
+    okButton.onclick = () => {
+      const gewonnen = gewinnSummen.includes(summe);
+      wuerfelErgebnis.textContent = gewonnen ? "Gewonnen!" : "Verloren!";
+
+      // OK-Button ausblenden, Würfelwurf-Button wieder einblenden
+      wuerfelWurfBtn.style.display = 'inline-block';
+      okButton.style.display = 'none';
+
+      if (gewonnen) spielGewonnen(p, gegnerMon, gegnerName);
+      else spielVerloren(p, gegnerMon, gegnerName);
+    };
+  };
+}
+
+
+
+function hideWuerfel() {
+  footerWuerfel.style.display = 'none';
+  okButton.style.display = 'none';
+}
+
+function spielGewonnen(p, gegnerMon, gegnerName) {
+  const log = document.getElementById("log");
+  log.innerHTML += `<p><b>${p.name}</b> (Stufe ${p.evolutionStage}) besiegt ${gegnerName}s <b>${gegnerMon.name}</b>!</p>`;
+  aktuelleKampfData = null;
+
+  if (p.evolutionStage < 3) {
+    const next = entwicklungenList.find(pk =>
+      pk.typ === p.typ &&
+      pk.evolutionStage === p.evolutionStage + 1 &&
+      pk.ndex === p.ndex + 1
+    );
+    if (next) {
+      Object.assign(p, next);
+      const index = spielerPokemon.findIndex(sp => sp.ndex === next.ndex - 1);
+      if (index !== -1) {
+        spielerPokemon[index] = { ...p };
+        if (aktuelleKampfData) aktuelleKampfData.spielerMon = spielerPokemon[index];
+      }
+      log.innerHTML += `<p>Dein Pokémon entwickelt sich zu <b>${p.name}</b>!</p>
+                        <img src="${p.img}" alt="${p.name}" style="display: block; margin: 6px auto; width: 152px;">`;
+    }
+  } else if (p.evolutionStage === 3 && !hatMegaEntwicklung) {
+    const megaForm = megaPokemonList.find(m => m.ndex === p.ndex && m.evolutionStage === 4);
+    if (megaForm) {
+      const index = spielerPokemon.findIndex(sp => sp.ndex === p.ndex);
+      if (index !== -1) {
+        Object.assign(p, megaForm);
+        spielerPokemon[index] = { ...p };
+        if (aktuelleKampfData) aktuelleKampfData.spielerMon = spielerPokemon[index];
+        hatMegaEntwicklung = true;
+        log.innerHTML += `<p>Dein Pokémon mega entwickelt sich zu <b>${p.megaName}</b>!</p>
+                          <img src="${p.megaSpriteUrl}" alt="${p.megaName}" style="display: block; margin: 6px auto; width: 152px;">`;
+      }
+    }
+  }
+
+  kaempfe++;
+
+  if (endKampfModus) {
+    zeigeEnde(true);
+  } else {
+    entscheideWeg();
+  }
+
+  hideWuerfel();
+}
+
+
+function spielVerloren(p, gegnerMon, gegnerName) {
+  // Das eingesetzte Pokémon sperren
+  gesperrtePokemon.push(p.name);
+
+  const verfügbarePokemon = spielerPokemon.filter(pk => !gesperrtePokemon.includes(pk.name));
+  const log = document.getElementById("log");
+
+  if (verfügbarePokemon.length === 0) {
+    // Keine Pokémon mehr verfügbar → Spiel verloren
+    log.innerHTML += `<p>Oh nein! ${gegnerName}s <b>${gegnerMon.name}</b> besiegt dein letztes Pokémon <b>${p.name}</b>. Das Abenteuer ist vorbei!</p>`;
+    gameDiv.innerHTML += `<button class="btn" onclick="start()">Neu starten</button>`;
+    hideWuerfel();
+  } else {
+    // Gegner und Trainer-Daten behalten (keine Veränderung an aktuelleKampfData)
+    log.innerHTML += `<p><b>${p.name}</b> wurde besiegt und steht nicht mehr zur Verfügung. Der nächste Kampf beginnt!</p>`;
+
+    // Nächster Kampf mit gleichem Gegner und Trainer
+    naechsterKampf();
+  }
+}
+
+
+
+function entscheideWeg() {
+  const log = document.getElementById("log");
+  log.innerHTML += `<p>Wähle deinen nächsten Weg!</p>`;
+  shuffle(verbleibendeOrtPool);
+  let auswahl = verbleibendeOrtPool.slice(0,3);
+  auswahl.forEach(o => {
+    const btn = document.createElement("div");
+    btn.className = "btn ort";
+    btn.innerHTML = `<div style="font-weight:bold">${o.name}</div><div class="desc">${o.desc}</div>`;
+    btn.onclick = () => {
+      aktuellerOrt = o.name;
+      log.innerHTML += `<p>Du gehst nach <b>${o.name}</b>.</p>`;
+      document.querySelectorAll('.btn.ort').forEach(btn => btn.remove());
+      verbleibendeOrtPool = verbleibendeOrtPool.filter(ort => ort.name !== o.name);
+      naechsterKampf();
+    };
+    gameDiv.appendChild(btn);
+  });
+  hideWuerfel();
+}
+  
+function finalKampf() {
+window.scrollTo({ top: 0, behavior: 'smooth' });
+  const pikachu = allMons.find(p => p.name.toLowerCase() === "pikachu");
+  if (!pikachu) {
+    console.error("Pikachu nicht in allMons gefunden!");
+    return;
+  }
+  
+  // Pikachu auf Evolutionsstufe 5 und Level 100 setzen
+  const pikachuFinal = { ...pikachu, evolutionStage: 4, level: 100 };
+  
+  const verfügbareSpielerPokemon = spielerPokemon.filter(p => !gesperrtePokemon.includes(p.name));
+  
+  // Spezielles Bild von Ashs Pikachu (Hoenn)
+  const ashPikachuHoennUrl = "https://www.pokewiki.de/images/5/57/Ashs_Pikachu_Hoenn.jpg";
+  
+  const logText = `<h2>Finaler Kampf gegen <span style="color:#d00000">Ash mit Pikachu in Weltmeisterform! Hier brauchst du Glück!</span></h2>
+    <div style="margin: 10px 0;">
+      <img src="${ashPikachuHoennUrl}" alt="Ashs Pikachu Hoenn" style="max-width: 180px; border-radius: 8px; border: 2px solid #d00000;">
+    </div>
+    <div id="log">
+      Ash ruft <img src="${pikachuFinal.img}" class="pokemon-img" style="vertical-align:middle;">${pikachuFinal.name} (Level ${pikachuFinal.level}).
+    </div>
+    <div class="desc">Der kleine, flinke Elektro-Pokémon, bereit für den ultimativen Kampf.</div>`;
+  
+  gameDiv.innerHTML = logText;
+  
+  verfügbareSpielerPokemon.forEach(p => {
+    const btn = document.createElement("div");
+    btn.className = "btn";
+
+    // Mega-Bild bei Mega-Pokémon im Team anzeigen
+    const imgUrl = (p.evolutionStage === 4 && p.megaSpriteUrl) ? p.megaSpriteUrl : p.img;
+
+    btn.innerHTML = `<img src="${imgUrl}" class="pokemon-img" style="vertical-align:middle;">${p.name}`;
+    btn.onclick = () => vorbereitungsPhase(p, pikachuFinal, "Ash");
+    gameDiv.appendChild(btn);
+  });
+  hideWuerfel();
+}
+
+
+
+
+function zeigeEnde(gewonnen) {
+  gameDiv.innerHTML = (gewonnen
+    ? `<h2>Glückwunsch, du hast Ash besiegt und das Abenteuer gewonnen!</h2>
+       <img src="https://archives.bulbagarden.net/media/upload/thumb/8/89/Kanto_Ribbon_Cup.png/440px-Kanto_Ribbon_Cup.png" alt="Kanto Ribbon Cup" style="max-width: 100%; height: auto; margin-top: 10px;">`
+    : `<h2>Game Over! Ash war zu stark...</h2>`)
+    + `<button class="btn" onclick="start()">Neu starten</button>`;
+}
+
+</script>
+</body>
+</html>

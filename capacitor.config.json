@@ -1,0 +1,6 @@
+{
+  "appId": "de.pokemon.app",
+  "appName": "pokemon",
+  "webDir": "www",
+  "bundledWebRuntime": false
+}
