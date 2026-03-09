@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Merkspiel – Nur ungetroffene Icons bei Fehler anzeigen</title>
+  <title>Merkspiel – Bild-Icons</title>
   <style>
     body {
       margin: 0;
@@ -16,11 +16,9 @@
       position: absolute;
       width: 25px;
       height: 25px;
-      background: yellow;
-      border-radius: 5px;
       display: none;
-      transition: background 0.2s;
       z-index: 5;
+      image-rendering: auto;
     }
 
     .hitbox-debug {
@@ -81,6 +79,10 @@
 <script>
   const DEBUG = true;
 
+  const IMG_START = "resources/start.jpg";
+  const IMG_HIT   = "resources/hit.jpg";
+  const IMG_MISS  = "resources/miss.jpg";
+
   const info = document.getElementById("info");
   const countdown = document.getElementById("countdown");
   const nextBtn = document.getElementById("nextRoundBtn");
@@ -97,7 +99,6 @@
 
   const ICON_SIZE = 25;
   const HIT_RADIUS = 75;
-  const HITBOX_SIZE = HIT_RADIUS * 2;
   const MIN_DISTANCE = HIT_RADIUS * 2;
 
   nextBtn.addEventListener("click", () => {
@@ -139,10 +140,13 @@
 
       positions.push({ x: cx, y: cy, hit: false });
 
-      const icon = document.createElement("div");
+      const icon = document.createElement("img");
+      icon.src = IMG_START;
       icon.className = "icon";
       icon.style.left = (cx - ICON_SIZE / 2) + "px";
       icon.style.top = (cy - ICON_SIZE / 2) + "px";
+      icon.style.width = ICON_SIZE + "px";
+      icon.style.height = ICON_SIZE + "px";
       document.body.appendChild(icon);
       icons.push(icon);
 
@@ -206,12 +210,12 @@
         remaining--;
 
         const icon = icons[i];
+        icon.src = IMG_HIT;
         icon.style.display = "block";
-        icon.style.background = "lime";
 
         setTimeout(() => {
           icon.style.display = "none";
-          icon.style.background = "yellow";
+          icon.src = IMG_START;
         }, 300);
 
         if (remaining === 0) {
@@ -244,8 +248,8 @@
   function flashRed() {
     for (let i = 0; i < positions.length; i++) {
       if (!positions[i].hit) {
+        icons[i].src = IMG_MISS;
         icons[i].style.display = "block";
-        icons[i].style.background = "red";
       }
     }
 
@@ -253,7 +257,7 @@
       for (let i = 0; i < positions.length; i++) {
         if (!positions[i].hit) {
           icons[i].style.display = "none";
-          icons[i].style.background = "yellow";
+          icons[i].src = IMG_START;
         }
       }
     }, 200);
