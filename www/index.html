@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Merkspiel – 75px Icons + Safe Area</title>
+  <title>Merkspiel – Bild-Icons</title>
   <style>
     body {
       margin: 0;
@@ -14,11 +14,10 @@
 
     .icon {
       position: absolute;
-      width: 75px;
-      height: 75px;
       display: none;
       z-index: 5;
       image-rendering: auto;
+      /* WICHTIG: KEINE width/height hier! */
     }
 
     .hitbox-debug {
@@ -55,7 +54,7 @@
 
     #nextRoundBtn {
       position: fixed;
-      bottom: 120px; /* weiter nach oben */
+      bottom: 120px; /* höher */
       left: 50%;
       transform: translateX(-50%);
       padding: 15px 25px;
@@ -79,9 +78,9 @@
 <script>
   const DEBUG = true;
 
-  const IMG_START = "resources/start.png";
-  const IMG_HIT   = "resources/hit.png";
-  const IMG_MISS  = "resources/miss.png";
+  const IMG_START = "resources/start.jpg";
+  const IMG_HIT   = "resources/hit.jpg";
+  const IMG_MISS  = "resources/miss.jpg";
 
   const info = document.getElementById("info");
   const countdown = document.getElementById("countdown");
@@ -125,7 +124,8 @@
 
       while (!valid) {
         cx = Math.random() * (screenW - ICON_SIZE) + ICON_SIZE / 2;
-        cy = Math.random() * (screenH - SAFE_TOP - SAFE_BOTTOM - ICON_SIZE) + SAFE_TOP + ICON_SIZE / 2;
+        cy = Math.random() * (screenH - SAFE_TOP - SAFE_BOTTOM - ICON_SIZE)
+             + SAFE_TOP + ICON_SIZE / 2;
 
         valid = true;
 
@@ -148,6 +148,8 @@
       icon.className = "icon";
       icon.style.left = (cx - ICON_SIZE / 2) + "px";
       icon.style.top = (cy - ICON_SIZE / 2) + "px";
+      icon.style.width = ICON_SIZE + "px";
+      icon.style.height = ICON_SIZE + "px";
       document.body.appendChild(icon);
       icons.push(icon);
 
