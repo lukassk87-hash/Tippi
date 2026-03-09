@@ -159,21 +159,13 @@
   let tapEnabled = false;
 
   let ICON_SIZE = MAX_ICON_SIZE;
-  let HIT_RADIUS = ICON_SIZE;
+  let HIT_RADIUS = ICON_SIZE * 0.6;   // ⭐ Hitbox = 120% des Icons
 
-  // ---------------------------------------------------------
-  // ⭐ PRELOAD ALL IMAGES AT APP START
-  // ---------------------------------------------------------
+  // PRELOAD
   const preloadImages = [IMG_START, IMG_HIT, IMG_MISS];
-  preloadImages.forEach(src => {
-    const img = new Image();
-    img.src = src;
-  });
-  // ---------------------------------------------------------
+  preloadImages.forEach(src => { const img = new Image(); img.src = src; });
 
-  // -----------------------------
-  // HIGH SCORE SYSTEM
-  // -----------------------------
+  // HIGHSCORE SYSTEM
   function loadHighscores() {
     const data = localStorage.getItem("highscores");
     return data ? JSON.parse(data) : [];
@@ -186,10 +178,8 @@
   function addHighscore(name, score) {
     let list = loadHighscores();
     list.push({ name, score });
-
     list.sort((a, b) => b.score - a.score);
     list = list.slice(0, 3);
-
     saveHighscores(list);
   }
 
@@ -210,10 +200,6 @@
     if (list.length < 3) return true;
     return score > list[list.length - 1].score;
   }
-
-  // -----------------------------
-  // GAME LOGIC
-  // -----------------------------
 
   nextBtn.addEventListener("click", () => {
     highscoreBox.style.display = "none";
@@ -267,7 +253,7 @@
     let count = round;
 
     ICON_SIZE = MAX_ICON_SIZE;
-    HIT_RADIUS = ICON_SIZE;
+    HIT_RADIUS = ICON_SIZE * 0.6;   // ⭐ Hitbox = 120%
 
     let placed = null;
 
@@ -277,7 +263,7 @@
       if (!placed) {
         ICON_SIZE *= 0.9;
         ICON_SIZE = Math.max(ICON_SIZE, MIN_ICON_SIZE);
-        HIT_RADIUS = ICON_SIZE;
+        HIT_RADIUS = ICON_SIZE * 0.6;   // ⭐ Hitbox = 120%
 
         if (ICON_SIZE === MIN_ICON_SIZE) {
           placed = tryPlaceIcons(count);
