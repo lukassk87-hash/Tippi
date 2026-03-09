@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-UTF-8">
-  <title>Merkspiel – Auto-Shrink Random Icons + Highscore + GameOver Overlay</title>
+  <meta charset="UTF-8">
+  <title>Merkspiel – Auto-Shrink Random Icons + Highscore + GameOver Overlay + Preload</title>
   <style>
     body {
       margin: 0;
@@ -77,7 +77,6 @@
       z-index: 40;
     }
 
-    /* GAME OVER OVERLAY */
     #gameOverOverlay {
       position: fixed;
       top: 50%;
@@ -122,7 +121,6 @@
 
 <div id="highscoreBox"></div>
 
-<!-- GAME OVER OVERLAY -->
 <div id="gameOverOverlay">
   <h1>Game Over</h1>
   <img src="resources/miss.jpg" alt="Miss">
@@ -162,6 +160,16 @@
 
   let ICON_SIZE = MAX_ICON_SIZE;
   let HIT_RADIUS = ICON_SIZE;
+
+  // ---------------------------------------------------------
+  // ⭐ PRELOAD ALL IMAGES AT APP START
+  // ---------------------------------------------------------
+  const preloadImages = [IMG_START, IMG_HIT, IMG_MISS];
+  preloadImages.forEach(src => {
+    const img = new Image();
+    img.src = src;
+  });
+  // ---------------------------------------------------------
 
   // -----------------------------
   // HIGH SCORE SYSTEM
@@ -396,7 +404,6 @@
 
         const score = round - 1;
 
-        // Highscore prüfen
         if (checkForHighscore(score)) {
           const name = prompt(`Neuer Highscore! Runde ${score}. Dein Name:`);
           if (name) addHighscore(name, score);
@@ -404,7 +411,6 @@
 
         showHighscores();
 
-        // GAME OVER OVERLAY anzeigen
         gameOverOverlay.style.display = "block";
       }
     }
