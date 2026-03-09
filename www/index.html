@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <title>Merkspiel – Auto-Shrink Random Icons</title>
+  <meta charset="UTF-UTF-8">
+  <title>Merkspiel – Auto-Shrink Random Icons + Highscore + GameOver Overlay</title>
   <style>
     body {
       margin: 0;
@@ -30,7 +30,7 @@
 
     #info {
       position: fixed;
-      top: 40px; /* weiter unten */
+      top: 40px;
       left: 10px;
       color: white;
       font-size: 18px;
@@ -64,6 +64,54 @@
       cursor: pointer;
       z-index: 30;
     }
+
+    #highscoreBox {
+      position: fixed;
+      top: 120px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      font-size: 20px;
+      text-align: center;
+      display: none;
+      z-index: 40;
+    }
+
+    /* GAME OVER OVERLAY */
+    #gameOverOverlay {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: white;
+      display: none;
+      z-index: 100;
+    }
+
+    #gameOverOverlay h1 {
+      font-size: 60px;
+      margin: 0;
+      padding: 0;
+    }
+
+    #gameOverOverlay img {
+      width: 180px;
+      height: 180px;
+      margin-top: 25px;
+      border-radius: 10px;
+    }
+
+    #restartBtn {
+      margin-top: 25px;
+      padding: 15px 25px;
+      font-size: 22px;
+      border: none;
+      border-radius: 8px;
+      background: #dc3545;
+      color: white;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -72,8 +120,18 @@
 <div id="countdown"></div>
 <button id="nextRoundBtn">Start</button>
 
+<div id="highscoreBox"></div>
+
+<!-- GAME OVER OVERLAY -->
+<div id="gameOverOverlay">
+  <h1>Game Over</h1>
+  <img src="resources/miss.jpg" alt="Miss">
+  <br>
+  <button id="restartBtn">Neustart</button>
+</div>
+
 <script>
-  const DEBUG = true;
+  const DEBUG = false;
 
   const IMG_START = "resources/start.jpg";
   const IMG_HIT   = "resources/hit.jpg";
@@ -88,6 +146,9 @@
   const info = document.getElementById("info");
   const countdown = document.getElementById("countdown");
   const nextBtn = document.getElementById("nextRoundBtn");
+  const highscoreBox = document.getElementById("highscoreBox");
+  const gameOverOverlay = document.getElementById("gameOverOverlay");
+  const restartBtn = document.getElementById("restartBtn");
 
   let mistakes = 0;
   let round = 1;
@@ -102,7 +163,52 @@
   let ICON_SIZE = MAX_ICON_SIZE;
   let HIT_RADIUS = ICON_SIZE;
 
+  // -----------------------------
+  // HIGH SCORE SYSTEM
+  // -----------------------------
+  function loadHighscores() {
+    const data = localStorage.getItem("highscores");
+    return data ? JSON.parse(data) : [];
+  }
+
+  function saveHighscores(list) {
+    localStorage.setItem("highscores", JSON.stringify(list));
+  }
+
+  function addHighscore(name, score) {
+    let list = loadHighscores();
+    list.push({ name, score });
+
+    list.sort((a, b) => b.score - a.score);
+    list = list.slice(0, 3);
+
+    saveHighscores(list);
+  }
+
+  function showHighscores() {
+    const list = loadHighscores();
+    if (list.length === 0) {
+      highscoreBox.innerHTML = "<b>Keine Highscores vorhanden</b>";
+    } else {
+      highscoreBox.innerHTML =
+        "<b>Top 3 Highscores</b><br><br>" +
+        list.map((e, i) => `${i+1}. ${e.name}: ${e.score}`).join("<br>");
+    }
+    highscoreBox.style.display = "block";
+  }
+
+  function checkForHighscore(score) {
+    const list = loadHighscores();
+    if (list.length < 3) return true;
+    return score > list[list.length - 1].score;
+  }
+
+  // -----------------------------
+  // GAME LOGIC
+  // -----------------------------
+
   nextBtn.addEventListener("click", () => {
+    highscoreBox.style.display = "none";
     nextBtn.style.display = "none";
     spawnIcons();
   });
@@ -131,7 +237,6 @@
           const dy = cy - p.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
 
-          // KORREKTE Kollisionsprüfung
           if (dist < HIT_RADIUS * 2) {
             ok = false;
             break;
@@ -271,7 +376,6 @@
             round++;
             info.textContent = `Fehler: ${mistakes} / 3 – Runde ${round}`;
 
-            // Button-Text abhängig von Runde
             nextBtn.textContent = round === 1 ? "Start" : "Nächste Runde";
             clearIcons();
             nextBtn.style.display = "block";
@@ -289,10 +393,19 @@
 
       if (mistakes >= 3) {
         gameActive = false;
-        info.textContent = "Game Over";
 
-        nextBtn.textContent = "Neustart";
-        nextBtn.style.display = "block";
+        const score = round - 1;
+
+        // Highscore prüfen
+        if (checkForHighscore(score)) {
+          const name = prompt(`Neuer Highscore! Runde ${score}. Dein Name:`);
+          if (name) addHighscore(name, score);
+        }
+
+        showHighscores();
+
+        // GAME OVER OVERLAY anzeigen
+        gameOverOverlay.style.display = "block";
       }
     }
   }
@@ -326,9 +439,13 @@
     gameActive = true;
     info.textContent = "Fehler: 0 / 3 – Runde 1";
     clearIcons();
+    highscoreBox.style.display = "none";
+    gameOverOverlay.style.display = "none";
     nextBtn.textContent = "Start";
     nextBtn.style.display = "block";
   }
+
+  restartBtn.addEventListener("click", restartGame);
 
   document.addEventListener("click", (e) => {
     if (!gameActive && mistakes >= 3) {
