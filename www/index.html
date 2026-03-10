@@ -129,7 +129,7 @@
 </div>
 
 <script>
-  const DEBUG = false;
+  const DEBUG = true;
 
   const IMG_START = "resources/start.jpg";
   const IMG_HIT   = "resources/hit.jpg";
@@ -159,7 +159,10 @@
   let tapEnabled = false;
 
   let ICON_SIZE = MAX_ICON_SIZE;
-  let HIT_RADIUS = ICON_SIZE * 0.6;   // ⭐ Hitbox = 120% des Icons
+  let HIT_RADIUS = ICON_SIZE * 0.6;
+
+  // ⭐ NEU: Fehler dürfen nur gezählt werden, wenn das Spiel läuft
+  let mistakesEnabled = false;
 
   // PRELOAD
   const preloadImages = [IMG_START, IMG_HIT, IMG_MISS];
@@ -202,6 +205,7 @@
   }
 
   nextBtn.addEventListener("click", () => {
+    mistakesEnabled = false; // ⭐ Startphase → Fehler aus
     highscoreBox.style.display = "none";
     nextBtn.style.display = "none";
     spawnIcons();
@@ -253,7 +257,7 @@
     let count = round;
 
     ICON_SIZE = MAX_ICON_SIZE;
-    HIT_RADIUS = ICON_SIZE * 0.6;   // ⭐ Hitbox = 120%
+    HIT_RADIUS = ICON_SIZE * 0.6;
 
     let placed = null;
 
@@ -263,7 +267,7 @@
       if (!placed) {
         ICON_SIZE *= 0.9;
         ICON_SIZE = Math.max(ICON_SIZE, MIN_ICON_SIZE);
-        HIT_RADIUS = ICON_SIZE * 0.6;   // ⭐ Hitbox = 120%
+        HIT_RADIUS = ICON_SIZE * 0.6;
 
         if (ICON_SIZE === MIN_ICON_SIZE) {
           placed = tryPlaceIcons(count);
@@ -328,6 +332,7 @@
     countdown.style.display = "none";
 
     tapEnabled = true;
+    mistakesEnabled = true; // ⭐ Jetzt erst dürfen Fehler gezählt werden
   }
 
   function wait(ms) {
@@ -335,6 +340,7 @@
   }
 
   function handleTap(event) {
+
     if (!gameActive || !tapEnabled) return;
 
     const tapX = event.clientX;
@@ -365,6 +371,7 @@
 
         if (remaining === 0) {
           tapEnabled = false;
+          mistakesEnabled = false; // ⭐ Runde vorbei → Fehler aus
 
           setTimeout(() => {
             round++;
@@ -381,12 +388,17 @@
     }
 
     if (!hitSomething) {
+
+      // ⭐ Fehler nur zählen, wenn erlaubt
+      if (!mistakesEnabled) return;
+
       mistakes++;
       info.textContent = `Fehler: ${mistakes} / 3 – Runde ${round}`;
       flashRed();
 
       if (mistakes >= 3) {
         gameActive = false;
+        mistakesEnabled = false; // ⭐ Game Over → Fehler aus
 
         const score = round - 1;
 
@@ -429,6 +441,8 @@
     mistakes = 0;
     round = 1;
     gameActive = true;
+    mistakesEnabled = false; // ⭐ Neustart → Fehler aus
+
     info.textContent = "Fehler: 0 / 3 – Runde 1";
     clearIcons();
     highscoreBox.style.display = "none";
