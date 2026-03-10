@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Merkspiel – Auto-Shrink Random Icons + Highscore + GameOver Overlay + Preload</title>
+  <title>Merkspiel – Dynamisches Game Over Layout</title>
   <style>
     body {
       margin: 0;
@@ -65,27 +65,21 @@
       z-index: 30;
     }
 
-    #highscoreBox {
+    /* ⭐ Dynamischer Game-Over-Container */
+    #gameOverContainer {
       position: fixed;
-      top: 120px;
-      left: 50%;
-      transform: translateX(-50%);
-      color: white;
-      font-size: 20px;
-      text-align: center;
+      inset: 0;
       display: none;
-      z-index: 40;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
     }
 
     #gameOverOverlay {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
       text-align: center;
       color: white;
-      display: none;
-      z-index: 100;
+      margin-bottom: 40px;
     }
 
     #gameOverOverlay h1 {
@@ -111,6 +105,12 @@
       color: white;
       cursor: pointer;
     }
+
+    #highscoreBox {
+      color: white;
+      font-size: 20px;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -119,13 +119,17 @@
 <div id="countdown"></div>
 <button id="nextRoundBtn">Start</button>
 
-<div id="highscoreBox"></div>
+<!-- ⭐ Dynamischer Game Over Container -->
+<div id="gameOverContainer">
 
-<div id="gameOverOverlay">
-  <h1>Game Over</h1>
-  <img src="resources/miss.jpg" alt="Miss">
-  <br>
-  <button id="restartBtn">Neustart</button>
+  <div id="gameOverOverlay">
+    <h1>Game Over</h1>
+    <img src="resources/miss.jpg" alt="Miss">
+    <button id="restartBtn">Neustart</button>
+  </div>
+
+  <div id="highscoreBox"></div>
+
 </div>
 
 <script>
@@ -145,7 +149,7 @@
   const countdown = document.getElementById("countdown");
   const nextBtn = document.getElementById("nextRoundBtn");
   const highscoreBox = document.getElementById("highscoreBox");
-  const gameOverOverlay = document.getElementById("gameOverOverlay");
+  const gameOverContainer = document.getElementById("gameOverContainer");
   const restartBtn = document.getElementById("restartBtn");
 
   let mistakes = 0;
@@ -161,14 +165,9 @@
   let ICON_SIZE = MAX_ICON_SIZE;
   let HIT_RADIUS = ICON_SIZE * 0.6;
 
-  // ⭐ NEU: Fehler dürfen nur gezählt werden, wenn das Spiel läuft
   let mistakesEnabled = false;
 
-  // PRELOAD
-  const preloadImages = [IMG_START, IMG_HIT, IMG_MISS];
-  preloadImages.forEach(src => { const img = new Image(); img.src = src; });
-
-  // HIGHSCORE SYSTEM
+  /* ⭐ Highscore-System */
   function loadHighscores() {
     const data = localStorage.getItem("highscores");
     return data ? JSON.parse(data) : [];
@@ -195,7 +194,6 @@
         "<b>Top 3 Highscores</b><br><br>" +
         list.map((e, i) => `${i+1}. ${e.name}: ${e.score}`).join("<br>");
     }
-    highscoreBox.style.display = "block";
   }
 
   function checkForHighscore(score) {
@@ -205,8 +203,7 @@
   }
 
   nextBtn.addEventListener("click", () => {
-    mistakesEnabled = false; // ⭐ Startphase → Fehler aus
-    highscoreBox.style.display = "none";
+    mistakesEnabled = false;
     nextBtn.style.display = "none";
     spawnIcons();
   });
@@ -332,7 +329,7 @@
     countdown.style.display = "none";
 
     tapEnabled = true;
-    mistakesEnabled = true; // ⭐ Jetzt erst dürfen Fehler gezählt werden
+    mistakesEnabled = true;
   }
 
   function wait(ms) {
@@ -371,14 +368,14 @@
 
         if (remaining === 0) {
           tapEnabled = false;
-          mistakesEnabled = false; // ⭐ Runde vorbei → Fehler aus
+          mistakesEnabled = false;
 
           setTimeout(() => {
             round++;
             info.textContent = `Fehler: ${mistakes} / 3 – Runde ${round}`;
 
-            nextBtn.textContent = round === 1 ? "Start" : "Nächste Runde";
             clearIcons();
+            nextBtn.textContent = "Nächste Runde";
             nextBtn.style.display = "block";
           }, 500);
         }
@@ -389,7 +386,6 @@
 
     if (!hitSomething) {
 
-      // ⭐ Fehler nur zählen, wenn erlaubt
       if (!mistakesEnabled) return;
 
       mistakes++;
@@ -398,7 +394,7 @@
 
       if (mistakes >= 3) {
         gameActive = false;
-        mistakesEnabled = false; // ⭐ Game Over → Fehler aus
+        mistakesEnabled = false;
 
         const score = round - 1;
 
@@ -409,7 +405,7 @@
 
         showHighscores();
 
-        gameOverOverlay.style.display = "block";
+        gameOverContainer.style.display = "flex";
       }
     }
   }
@@ -441,12 +437,12 @@
     mistakes = 0;
     round = 1;
     gameActive = true;
-    mistakesEnabled = false; // ⭐ Neustart → Fehler aus
+    mistakesEnabled = false;
 
     info.textContent = "Fehler: 0 / 3 – Runde 1";
     clearIcons();
-    highscoreBox.style.display = "none";
-    gameOverOverlay.style.display = "none";
+    highscoreBox.innerHTML = "";
+    gameOverContainer.style.display = "none";
     nextBtn.textContent = "Start";
     nextBtn.style.display = "block";
   }
@@ -454,11 +450,7 @@
   restartBtn.addEventListener("click", restartGame);
 
   document.addEventListener("click", (e) => {
-    if (!gameActive && mistakes >= 3) {
-      restartGame();
-    } else {
-      handleTap(e);
-    }
+    handleTap(e);
   });
 
   nextBtn.style.display = "block";
