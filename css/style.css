@@ -22,6 +22,11 @@ body {
   text-align: center;
 }
 
+/* Menü ausblenden, wenn Spiel aktiv */
+body.game-active #mainMenu {
+  display: none;
+}
+
 #mainMenu h1 {
   font-size: 60px;
   margin-bottom: 20px;
@@ -162,6 +167,7 @@ body.game-active #gameOverContainer {
 #gameOverOverlay img {
   width: 180px;
   height: 180px;
+  object-fit: cover;
   border-radius: 10px;
   margin-top: 25px;
 }
