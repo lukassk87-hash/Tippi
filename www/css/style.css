@@ -192,3 +192,15 @@ body{
   #packGame header h1{font-size:18px}
   .menuBtn{font-size:14px}
 }
+/* Startbild im Menü: responsiv, zentriert, begrenzt */
+#menuImage {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  height: auto;
+  max-height: 60vh;
+  object-fit: cover;
+  margin: 18px auto;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+}
