@@ -39,31 +39,37 @@ jobs:
       - name: Install Capacitor Assets
         run: npm install --save-dev @capacitor/assets
 
-      - name: Dummy build
+      # 🔧 Bilder optimieren
+      - name: Optimize images
+        run: npm run optimize-images
+
+      # Web-Build
+      - name: Build Web App
         run: npm run build
 
-      # Android-Plattform zuerst erzeugen
+      # Android-Plattform erzeugen
       - name: Add Android platform
         run: npx cap add android
 
-      # Icons erst jetzt generieren
+      # Icons generieren
       - name: Generate Android Icons
         run: npx capacitor-assets generate --android
 
-      # Jetzt synchronisieren
+      # Sync
       - name: Sync Capacitor
         run: npx cap sync android
 
       - name: Set ANDROID_HOME
         run: echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> $GITHUB_ENV
 
+      # APK bauen
       - name: Build APK
         working-directory: android
         run: ./gradlew assembleDebug --stacktrace --quiet
 
-      # Nur die APK hochladen – nicht den ganzen Build-Ordner
+      # Nur APK hochladen
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: pokemon.apk
+          name: tippi.apk
           path: android/app/build/outputs/apk/debug/*.apk
