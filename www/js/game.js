@@ -3,9 +3,9 @@
 ============================================================ */
 const DEBUG = false;
 
-const IMG_START = "www/resources/start.jpg";
-const IMG_HIT   = "www/resources/hit.jpg";
-const IMG_MISS  = "www/resources/miss.jpg";
+const IMG_START = "/resources/start.jpg";
+const IMG_HIT   = "/resources/hit.jpg";
+const IMG_MISS  = "/resources/miss.jpg";
 
 const SAFE_TOP = 75;
 const SAFE_BOTTOM = 75;
