@@ -12,12 +12,16 @@
     <header>
       <h1>Ich tippe meinen Päcki</h1>
       <div id="packInfo">Runde: <span id="roundNum">0</span> · Fehler: <span id="mistakes">0</span>/3</div>
+      <!-- In-game highscore-Box (optional, wird von highscore.js aktualisiert) -->
+      <div id="highscoreBox" aria-live="polite"></div>
     </header>
 
     <div id="packArea">
       <div id="imageWrapPack">
-        <img id="packImage" src="resources/miss.jpg" alt="Bild">
+        <img id="packImage" src="www/resources/miss.jpg" alt="Bild">
+        <!-- unsichtbares Grid (10x10) wird in JS berechnet -->
         <div id="packOverlay" aria-hidden="true"></div>
+        <!-- Term Overlay: groß, mittig, temporär sichtbar -->
         <div id="termOverlay" aria-hidden="true"></div>
       </div>
     </div>
@@ -36,7 +40,9 @@
     </div>
   </div>
 
-  <script src="js/pack.js"></script>
+  <!-- Highscore-Funktionen zuerst laden -->
   <script src="js/highscore.js"></script>
+  <!-- Dann das Spielskript, das die Highscore-Funktionen nutzt -->
+  <script src="js/pack.js"></script>
 </body>
 </html>
