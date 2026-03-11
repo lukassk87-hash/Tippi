@@ -1,11 +1,9 @@
-/* ============================================================
-   ELEMENTE & KONSTANTEN
-============================================================ */
+/* ELEMENTE & KONSTANTEN */
 const DEBUG = false;
 
-const IMG_START = "/resources/start.jpg";
-const IMG_HIT   = "/resources/hit.jpg";
-const IMG_MISS  = "/resources/miss.jpg";
+const IMG_START = "resources/start.jpg";
+const IMG_HIT   = "resources/hit.jpg";
+const IMG_MISS  = "resources/miss.jpg";
 
 const SAFE_TOP = 75;
 const SAFE_BOTTOM = 75;
@@ -40,10 +38,7 @@ let mistakesEnabled = false;
 let lastTapTime = 0;
 let ignoreClicksDuringStart = false;
 
-/* ============================================================
-   STARTBUTTON
-   - stoppt Propagation, setzt Flag, startet Platzierung
-============================================================ */
+/* STARTBUTTON */
 nextBtn.addEventListener("click", (ev) => {
   ev.stopPropagation();
   ev.preventDefault();
@@ -55,13 +50,11 @@ nextBtn.addEventListener("click", (ev) => {
   mistakesEnabled = false;
   tapEnabled = false;
 
-  ignoreClicksDuringStart = true; // bis Countdown fertig
+  ignoreClicksDuringStart = true;
   spawnIcons();
 });
 
-/* ============================================================
-   ICON PLATZIERUNG
-============================================================ */
+/* ICON PLATZIERUNG */
 function tryPlaceIcons(count) {
   const screenW = window.innerWidth;
   const screenH = window.innerHeight;
@@ -165,9 +158,7 @@ function spawnIcons() {
   showIconsWithCountdown();
 }
 
-/* ============================================================
-   COUNTDOWN
-============================================================ */
+/* COUNTDOWN */
 async function showIconsWithCountdown() {
   countdown.style.display = "block";
 
@@ -199,21 +190,15 @@ function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-/* ============================================================
-   TAP LOGIK
-   - pointerdown verwendet, duplicate suppression, guards
-============================================================ */
+/* TAP LOGIK */
 function handleTap(event) {
-  // Nur wenn Spiel aktiv und Taps erlaubt
   if (!gameActive || !tapEnabled) return;
 
-  // Wenn noch keine Icons platziert sind, ignoriere Taps
   if (!positions || positions.length === 0) {
     console.log("handleTap: ignored because no positions yet");
     return;
   }
 
-  // Duplicate suppression (Touch -> pointer -> click)
   const now = Date.now();
   if (now - lastTapTime < 350) {
     console.log("handleTap: duplicate event ignored", now - lastTapTime);
@@ -221,10 +206,8 @@ function handleTap(event) {
   }
   lastTapTime = now;
 
-  // Ignoriere Klicks auf Buttons/Links
   const clickedButton = event.target.closest("button, a");
   if (clickedButton) {
-    // Wenn es der Restart-Button ist, allow normal flow (restartBtn has its own listener)
     if (clickedButton.id === "restartBtn") return;
     return;
   }
@@ -301,9 +284,7 @@ function handleTap(event) {
   }
 }
 
-/* ============================================================
-   FLASH RED
-============================================================ */
+/* FLASH RED */
 function flashRed() {
   document.body.style.backgroundColor = "#550000";
 
@@ -326,16 +307,10 @@ function flashRed() {
   }, 500);
 }
 
-/* ============================================================
-   GAME OVER / NEUSTART
-============================================================ */
+/* GAME OVER / NEUSTART */
 function clearIcons() {
-  icons.forEach(el => {
-    try { el.remove(); } catch (e) {}
-  });
-  hitboxes.forEach(el => {
-    try { el.remove(); } catch (e) {}
-  });
+  icons.forEach(el => { try { el.remove(); } catch (e) {} });
+  hitboxes.forEach(el => { try { el.remove(); } catch (e) {} });
   icons = [];
   hitboxes = [];
   positions = [];
@@ -362,10 +337,7 @@ restartBtn.addEventListener("click", (ev) => {
   restartGame();
 });
 
-/* ============================================================
-   GLOBAL INPUT HANDLER
-   - Verwende pointerdown (besser für Touch), vermeide click duplicates
-============================================================ */
+/* GLOBAL INPUT HANDLER */
 document.addEventListener("pointerdown", (e) => {
   if (ignoreClicksDuringStart) return;
   handleTap(e);
