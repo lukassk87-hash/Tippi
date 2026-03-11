@@ -22,7 +22,6 @@ body {
   text-align: center;
 }
 
-/* Menü ausblenden, wenn Spiel aktiv */
 body.game-active #mainMenu {
   display: none;
 }
@@ -32,7 +31,6 @@ body.game-active #mainMenu {
   margin-bottom: 20px;
 }
 
-/* Menübild hart begrenzt */
 #menuImage {
   width: 180px;
   height: 180px;
@@ -41,7 +39,6 @@ body.game-active #mainMenu {
   margin-bottom: 20px;
 }
 
-/* Buttons */
 .menuBtn {
   padding: 15px 30px;
   font-size: 22px;
@@ -61,16 +58,13 @@ body.game-active #mainMenu {
    SPIEL (game.html)
 ============================================================ */
 
-/* Standardmäßig ALLES ausblenden */
 #info,
 #countdown,
 #hintText,
-#nextRoundBtn,
-#gameOverContainer {
+#nextRoundBtn {
   display: none;
 }
 
-/* Nur wenn body.game-active gesetzt ist → Spiel sichtbar (ohne GameOver) */
 body.game-active #info,
 body.game-active #countdown,
 body.game-active #hintText,
@@ -78,14 +72,12 @@ body.game-active #nextRoundBtn {
   display: block;
 }
 
-/* Icons */
 .icon {
   position: absolute;
   display: none;
   z-index: 5;
 }
 
-/* Hitbox Debug */
 .hitbox-debug {
   position: absolute;
   border-radius: 50%;
@@ -95,7 +87,6 @@ body.game-active #nextRoundBtn {
   z-index: 3;
 }
 
-/* Info */
 #info {
   position: fixed;
   top: 40px;
@@ -103,7 +94,6 @@ body.game-active #nextRoundBtn {
   font-size: 18px;
 }
 
-/* Countdown */
 #countdown {
   position: fixed;
   top: 50%;
@@ -114,7 +104,6 @@ body.game-active #nextRoundBtn {
   z-index: 20;
 }
 
-/* Hinweistext */
 #hintText {
   position: fixed;
   bottom: 200px;
@@ -127,7 +116,6 @@ body.game-active #nextRoundBtn {
   z-index: 30;
 }
 
-/* Start/Nächste Runde Button */
 #nextRoundBtn {
   position: fixed;
   bottom: 120px;
@@ -147,7 +135,7 @@ body.game-active #nextRoundBtn {
 #gameOverContainer {
   position: fixed;
   inset: 0;
-  display: none; /* bleibt standardmäßig versteckt; JS zeigt es bei GameOver */
+  display: none;
   flex-direction: column;
   justify-content: center;
   align-items: center;
