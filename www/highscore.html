@@ -1,24 +1,22 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Tippi – Highscores</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
-
 <body>
-
-  <div id="highscorePage">
+  <div id="highscorePage" style="max-width:820px;margin:18px auto;padding:12px;color:#eee;">
     <h1>Highscores</h1>
-    <div id="highscoreList"></div>
 
-    <button class="menuBtn" onclick="location.href='index.html'">
-      Zurück zum Menü
-    </button>
+    <div id="highscoreList" style="font-size:16px;line-height:1.5;"></div>
+
+    <div style="margin-top:18px;">
+      <button class="menuBtn" onclick="location.href='index.html'">Zurück zum Menü</button>
+    </div>
   </div>
 
   <script src="js/highscore.js"></script>
-
 </body>
 </html>
