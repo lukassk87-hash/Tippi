@@ -1,367 +1,115 @@
-:root{
-  --bg: #111;
-  --fg: #eee;
-  --accent: #28a745;
-  --danger: #dc3545;
-  --overlay-border: 1px solid rgba(255,255,255,0.12);
-  --cell-hover: rgba(40,160,255,0.18);
-  --cell-selected: rgba(40,200,120,0.28);
+/* highscore.js
+   Erweiterung: Highscore-Einträge enthalten jetzt {name, score, game}
+   Funktionen:
+   - loadHighscores(), saveHighscores()
+   - addHighscore(name, score, game = "Tippi")
+   - checkForHighscore(score, game = "Tippi")
+   - renderHighscoreList() zeigt separate Abschnitte für beide Spiele
+   - showHighscores() aktualisiert highscoreBox (falls vorhanden) und Liste
+*/
+
+function loadHighscores() {
+  const data = localStorage.getItem("highscores");
+  return data ? JSON.parse(data) : [];
 }
 
-/* Grundlayout */
-*{box-sizing:border-box}
-html,body{height:100%}
-body{
-  margin:0;
-  background:var(--bg);
-  font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;
-  color:var(--fg);
-  -webkit-font-smoothing:antialiased;
-  -moz-osx-font-smoothing:grayscale;
+function saveHighscores(list) {
+  localStorage.setItem("highscores", JSON.stringify(list));
 }
 
-/* Hauptmenü / Buttons */
-#mainMenu {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 20px;
-  text-align: center;
-  padding: 18px;
+// name: string, score: number, game: string (optional)
+function addHighscore(name, score, game = "Tippi") {
+  let list = loadHighscores();
+  list.push({ name: String(name), score: Number(score), game: String(game) });
+  // sort global by score desc
+  list.sort((a, b) => b.score - a.score);
+  // keep reasonable length (e.g., top 50 overall)
+  list = list.slice(0, 50);
+  saveHighscores(list);
+  showHighscores();
+  renderHighscoreList();
 }
 
-/* Startbild im Menü: responsiv, zentriert, begrenzt */
-#menuImage {
-  display: block;
-  width: 100%;
-  max-width: 420px;      /* maximale Breite auf großen Bildschirmen */
-  height: auto;
-  max-height: 50vh;      /* maximal 50% der Viewport-Höhe */
-  object-fit: cover;
-  margin: 18px auto;
-  border-radius: 10px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.45);
-  user-select: none;
-  -webkit-user-drag: none;
+// check if score is a highscore for given game (top 3 for that game)
+function checkForHighscore(score, game = "Tippi") {
+  const list = loadHighscores().filter(e => e.game === game);
+  // sort descending by score to reliably get top positions
+  list.sort((a, b) => b.score - a.score);
+  if (list.length < 3) return true;
+  // compare with the 3rd best (index 2)
+  return score > list[2].score;
 }
 
-/* Alternative: wenn du das Bild in einem festen Rahmen willst, nutze .menu-image-wrap */
-.menu-image-wrap {
-  width: 100%;
-  max-width: 520px;
-  aspect-ratio: 16 / 9;
-  margin: 18px auto;
-  overflow: hidden;
-  border-radius: 12px;
-  background: #0b0b0b;
-  box-shadow: 0 8px 28px rgba(0,0,0,0.6);
-}
-.menu-image-wrap img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  user-select: none;
-  -webkit-user-drag: none;
-}
+// render the highscore list into #highscoreList (used on highscore.html)
+function renderHighscoreList() {
+  const list = loadHighscores();
+  const box = document.getElementById("highscoreList");
+  if (!box) return;
 
-/* Buttons */
-.menuBtn {
-  padding:12px 20px;
-  border-radius:8px;
-  border:0;
-  background:#2b2b2f;
-  color:var(--fg);
-  cursor:pointer;
-  font-size:16px;
-  transition: transform 120ms ease, background 120ms ease;
-}
-.menuBtn:active{ transform: translateY(1px) }
-.menuBtn:hover{ background:#333 }
+  // group by game
+  const groups = {};
+  for (const e of list) {
+    if (!groups[e.game]) groups[e.game] = [];
+    groups[e.game].push(e);
+  }
 
-/* Pack Spiel */
-#packGame {
-  max-width: 820px;
-  margin: 18px auto;
-  padding: 12px;
-  color: var(--fg);
+  // ensure both games appear even if empty
+  const gamesToShow = ["Tippi", "Ich tippe meinen Päcki"];
+  let html = "";
+
+  for (const g of gamesToShow) {
+    const arr = groups[g] ? groups[g].slice() : [];
+    // sort each group's entries by score desc
+    arr.sort((a, b) => b.score - a.score);
+    const top = arr.slice(0, 3);
+    html += `<div class="hs-game"><b>${escapeHtml(g)}</b><br>`;
+    if (top.length === 0) {
+      html += "Keine Highscores vorhanden<br><br>";
+    } else {
+      html += top.map((e, i) => `${i+1}. ${escapeHtml(e.name)}: ${e.score}`).join("<br>") + "<br><br>";
+    }
+    html += `</div>`;
+  }
+
+  box.innerHTML = html;
 }
 
-#packGame header {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:12px;
-  margin-bottom:12px;
+// showHighscores updates the in-game highscore box (if present) and the highscore page list
+function showHighscores() {
+  const list = loadHighscores();
+
+  const boxGame = document.getElementById("highscoreBox");
+  if (boxGame) {
+    // show compact summary: best per game
+    const games = ["Tippi", "Ich tippe meinen Päcki"];
+    let html = "";
+    for (const g of games) {
+      const arr = list.filter(e => e.game === g).sort((a,b)=>b.score-a.score).slice(0,3);
+      html += `<div><b>${escapeHtml(g)}</b>: `;
+      if (arr.length === 0) html += "—";
+      else html += arr.map((e,i)=>`${i+1}. ${escapeHtml(e.name)} (${e.score})`).join("; ");
+      html += `</div>`;
+    }
+    boxGame.innerHTML = html;
+  }
+
+  // also update highscore page list if present
+  renderHighscoreList();
 }
 
-#packArea {
-  display:flex;
-  justify-content:center;
-  margin-bottom:12px;
+function escapeHtml(str) {
+  if (typeof str !== "string") return "";
+  return str.replace(/[&<>"']/g, function(m) {
+    return {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[m];
+  });
 }
 
-#imageWrapPack {
-  position:relative;
-  width:100%;
-  max-width:640px;
-  aspect-ratio: 1 / 1;
-  border-radius:10px;
-  overflow:hidden;
-  background:#111;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.6);
-  transition: box-shadow 220ms cubic-bezier(.2,.9,.2,1), outline 220ms cubic-bezier(.2,.9,.2,1);
-}
-
-/* base image inside pack */
-#imageWrapPack img {
-  width:100%;
-  height:100%;
-  object-fit:cover;
-  display:block;
-  user-select:none;
-  -webkit-user-drag:none;
-}
-
-/* overlay for invisible grid (captures clicks) */
-#packOverlay {
-  position:absolute;
-  inset:0;
-  z-index:20;
-  background: transparent;
-}
-
-/* term overlay (großer Begriff) */
-#termOverlay {
-  position:absolute;
-  inset:0;
-  z-index:40;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  pointer-events:none;
-  opacity:0;
-  transition: opacity 120ms ease;
-}
-
-#termOverlay.show { opacity:1; }
-
-#termOverlay .termBox {
-  background: rgba(0,0,0,0.72);
-  color: #fff;
-  padding: 18px 26px;
-  border-radius: 10px;
-  font-size: clamp(22px, 7vw, 56px);
-  font-weight: 800;
-  text-align:center;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.7);
-}
-
-/* Controls */
-#packControls {
-  display:flex;
-  gap:10px;
-  justify-content:center;
-  margin-bottom:12px;
-}
-
-#packMessage {
-  text-align:center;
-  font-size:15px;
-  min-height:22px;
-}
-
-/* Game over box */
-#packGameOver {
-  text-align:center;
-  margin-top:12px;
-}
-
-/* STÄRKERER, DICKERER FLASH (mind. 25px Rahmen) */
-#imageWrapPack.flash-green {
-  outline: 25px solid rgba(40,200,120,0.18);
-  box-shadow:
-    0 0 0 36px rgba(40,200,120,0.06),
-    0 0 80px 18px rgba(40,200,120,0.10),
-    0 12px 40px rgba(0,0,0,0.6);
-  transition: box-shadow 260ms cubic-bezier(.2,.9,.2,1), outline 260ms cubic-bezier(.2,.9,.2,1);
-}
-
-#imageWrapPack.flash-red {
-  outline: 25px solid rgba(200,40,40,0.18);
-  box-shadow:
-    0 0 0 36px rgba(200,40,40,0.06),
-    0 0 80px 18px rgba(200,40,40,0.10),
-    0 12px 40px rgba(0,0,0,0.6);
-  transition: box-shadow 260ms cubic-bezier(.2,.9,.2,1), outline 260ms cubic-bezier(.2,.9,.2,1);
-}
-
-#imageWrapPack.flash-green::after,
-#imageWrapPack.flash-red::after {
-  content: "";
-  position: absolute;
-  inset: -18px;
-  border-radius: 16px;
-  pointer-events: none;
-  opacity: 0.95;
-  transform: scale(1);
-  transition: transform 260ms ease, opacity 260ms ease;
-}
-
-#imageWrapPack.flash-green::after {
-  box-shadow: 0 0 120px 36px rgba(40,200,120,0.06);
-  transform: scale(1.02);
-}
-
-#imageWrapPack.flash-red::after {
-  box-shadow: 0 0 120px 36px rgba(200,40,40,0.06);
-  transform: scale(1.02);
-}
-
-/* ensure preview boxes are hidden */
-.preview-box { display:none !important; }
-
-/* Game page basics */
-.game-active {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 18px;
-}
-
-/* Info bar and countdown */
-#info {
-  position: fixed;
-  top: 12px;
-  left: 12px;
-  background: rgba(0,0,0,0.45);
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-weight: 700;
-  z-index: 1000;
-}
-
-#countdown {
-  position: fixed;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0,0,0,0.6);
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-weight: 700;
-  z-index: 1000;
-}
-
-/* Game Over overlay */
-#gameOverContainer {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.6);
-  z-index: 9999;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
-#gameOverOverlay {
-  background: #121212;
-  padding: 18px;
-  border-radius: 12px;
-  max-width: 92%;
-  color: var(--fg);
-  text-align: center;
-}
-
-/* Highscore Box (in-game) */
-#highscoreBox {
-  margin-top: 12px;
-  font-size: 14px;
-  color: var(--fg);
-  background: rgba(255,255,255,0.02);
-  padding: 8px 12px;
-  border-radius: 8px;
-}
-
-/* Icon classes used by game.js */
-.icon {
-  position: absolute;
-  pointer-events: none;
-  border-radius: 8px;
-  transition: transform 160ms ease, opacity 160ms ease;
-  z-index: 50;
-}
-
-.hitbox-debug {
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(255,0,0,0.06);
-  border: 1px dashed rgba(255,255,255,0.06);
-  pointer-events: none;
-  z-index: 40;
-}
-
-/* Buttons used in various pages */
-button.menuBtn, button#nextRoundBtn, button#startPackBtn, button#packRestart, button#restartBtn {
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
-
-/* Highscore page container */
-#highscorePage {
-  max-width:820px;
-  margin:18px auto;
-  padding:12px;
-  color:var(--fg);
-}
-
-/* Pack image wrap fallback */
-#imageWrap, #imageWrapPack {
-  width: 100%;
-  max-width: 820px;
-  margin: 0 auto;
-}
-
-/* Grid CSS fallback minimal rules (if grid.css not loaded) */
-.grid-cell{
-  position:absolute;
-  box-sizing:border-box;
-  border: var(--overlay-border);
-  background: transparent;
-  transition: background-color 120ms ease, outline 120ms ease;
-}
-.grid-cell:hover{ background: var(--cell-hover) }
-.grid-cell.selected{ background: var(--cell-selected); outline: 2px solid rgba(255,255,255,0.06) }
-.grid-cell .label{ position:absolute; top:2px; left:4px; font-size:10px; color:rgba(255,255,255,0.7); pointer-events:none }
-
-/* Selection list fallback */
-#selectionList{
-  margin-top:12px;
-  font-size:14px;
-  color:#dfe;
-  min-height:22px;
-}
-
-/* Small screens */
-@media (max-width:420px){
-  #packGame header h1{font-size:18px}
-  .menuBtn{font-size:14px}
-  #menuImage { max-width: 92vw; max-height: 50vh; }
-}
-
-/* Accessibility helpers */
-[aria-live] { outline: none; }
-
-/* Utility helpers */
-.hidden { display: none !important }
-.center { display:flex; align-items:center; justify-content:center }
-
-/* Minor polish */
-a { color: var(--accent); text-decoration: none }
-a:hover { text-decoration: underline }
-small { color: rgba(255,255,255,0.6) }
+document.addEventListener("DOMContentLoaded", () => {
+  renderHighscoreList();
+});
