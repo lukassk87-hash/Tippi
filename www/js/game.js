@@ -294,10 +294,8 @@ function flashRed() {
       icons[i].style.display = "block";
     }
   }
-
-  setTimeout(() => {
-    document.body.style.backgroundColor = "#111";
-
+setTimeout(() => {
+    document.body.style.backgroundColor = "var(--bg-gray)";
     for (let i = 0; i < positions.length; i++) {
       if (!positions[i].hit) {
         icons[i].style.display = "none";
