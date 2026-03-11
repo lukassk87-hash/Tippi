@@ -1,11 +1,6 @@
 {
-  "appId": "de.lukas.tippi",
-  "appName": "Tippi",
+  "appId": "de.tippi.app",
+  "appName": "tippi",
   "webDir": "www",
-  "bundledWebRuntime": false,
-  "plugins": {
-    "SplashScreen": {
-      "launchShowDuration": 0
-    }
-  }
+  "bundledWebRuntime": false
 }
