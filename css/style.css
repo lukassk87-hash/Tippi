@@ -56,7 +56,7 @@ body {
    SPIEL (game.html)
 ============================================================ */
 
-/* Nur auf game.html sichtbar */
+/* Standardmäßig ALLES ausblenden */
 #info,
 #countdown,
 #hintText,
@@ -65,7 +65,7 @@ body {
   display: none;
 }
 
-/* Spiel aktiviert diese Elemente per JS */
+/* Nur wenn body.game-active gesetzt ist → Spiel sichtbar */
 body.game-active #info,
 body.game-active #countdown,
 body.game-active #hintText,
