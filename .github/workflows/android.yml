@@ -39,11 +39,11 @@ jobs:
       - name: Install Capacitor Assets
         run: npm install --save-dev @capacitor/assets
 
-      # 🔧 Bilder optimieren
+      # 🔧 Bilder optimieren (www/resources)
       - name: Optimize images
         run: npm run optimize-images
 
-      # Web-Build
+      # Web-Build (bei dir nur ein Platzhalter)
       - name: Build Web App
         run: npm run build
 
