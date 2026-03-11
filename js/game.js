@@ -1,11 +1,11 @@
 /* ============================================================
    ELEMENTE & KONSTANTEN
 ============================================================ */
-const DEBUG = true;
+const DEBUG = false;
 
-const IMG_START = "resources/start.jpg";
-const IMG_HIT   = "resources/hit.jpg";
-const IMG_MISS  = "resources/miss.jpg";
+const IMG_START = "www/resources/start.jpg";
+const IMG_HIT   = "www/resources/hit.jpg";
+const IMG_MISS  = "www/resources/miss.jpg";
 
 const SAFE_TOP = 75;
 const SAFE_BOTTOM = 75;
@@ -23,7 +23,6 @@ const restartBtn = document.getElementById("restartBtn");
 
 let mistakes = 0;
 let round = 1;
-/* Wichtig: Spiel ist initial nicht aktiv. Erst beim Klick auf Start wird es aktiv. */
 let gameActive = false;
 
 let positions = [];
@@ -39,17 +38,12 @@ let mistakesEnabled = false;
 
 /* ============================================================
    STARTBUTTON
-   - aktiviert das Spiel erst beim Klick
 ============================================================ */
 nextBtn.addEventListener("click", () => {
-  // Verstecke UI
   hintText.style.display = "none";
   nextBtn.style.display = "none";
 
-  // Spiel aktivieren
   gameActive = true;
-
-  // Fehler zählen erst nach Countdown erlauben
   mistakesEnabled = false;
   tapEnabled = false;
 
@@ -183,26 +177,21 @@ async function showIconsWithCountdown() {
 
   countdown.style.display = "none";
 
-  // Jetzt darf getappt werden
   tapEnabled = true;
   mistakesEnabled = true;
 }
 
-/* Hilfsfunktion */
 function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 /* ============================================================
    TAP LOGIK
-   - robust gegen Klicks auf UI-Buttons/Links
 ============================================================ */
 function handleTap(event) {
 
-  // Wenn Spiel nicht aktiv oder Taps nicht erlaubt → ignorieren
   if (!gameActive || !tapEnabled) return;
 
-  // Ignoriere Klicks auf Buttons oder Links (UI)
   const clickedButton = event.target.closest("button, a");
   if (clickedButton) return;
 
@@ -266,21 +255,20 @@ function handleTap(event) {
 
       const score = round - 1;
 
-      if (checkForHighscore && typeof checkForHighscore === "function" && checkForHighscore(score)) {
+      if (checkForHighscore(score)) {
         const name = prompt(`Neuer Highscore! Runde ${score}. Dein Name:`);
-        if (name && typeof addHighscore === "function") addHighscore(name, score);
+        if (name) addHighscore(name, score);
       }
 
-      if (typeof showHighscores === "function") showHighscores();
+      showHighscores();
 
-      // GameOver anzeigen
       gameOverContainer.style.display = "flex";
     }
   }
 }
 
 /* ============================================================
-   FLASH RED (500ms + Hintergrund)
+   FLASH RED
 ============================================================ */
 function flashRed() {
 
@@ -311,19 +299,14 @@ function flashRed() {
    GAME OVER / NEUSTART
 ============================================================ */
 function clearIcons() {
-  icons.forEach(el => {
-    try { el.remove(); } catch(e) {}
-  });
-  hitboxes.forEach(el => {
-    try { el.remove(); } catch(e) {}
-  });
+  icons.forEach(el => el.remove());
+  hitboxes.forEach(el => el.remove());
   icons = [];
   hitboxes = [];
   positions = [];
 }
 
 function restartGame() {
-  // Sauber zurücksetzen
   mistakes = 0;
   round = 1;
   gameActive = false;
@@ -335,7 +318,6 @@ function restartGame() {
   highscoreBox.innerHTML = "";
   gameOverContainer.style.display = "none";
 
-  // Zurück zur Startseite
   location.href = "index.html";
 }
 
@@ -343,7 +325,6 @@ restartBtn.addEventListener("click", restartGame);
 
 /* ============================================================
    GLOBAL TAP HANDLER
-   - Ignoriere Klicks auf Buttons/Links, damit Start-Klick nicht als Miss zählt
 ============================================================ */
 document.addEventListener("click", (e) => {
   handleTap(e);
