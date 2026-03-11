@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "scripts": {
     "optimize-images": "node tools/optimize-images.js",
-    "build": "npm run optimize-images && vite build"
+    "build": "npm run optimize-images && echo 'Using existing www folder'"
   },
   "dependencies": {
     "@capacitor/core": "latest"
