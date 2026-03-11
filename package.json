@@ -1,13 +1,17 @@
 {
   "name": "tippi",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "scripts": {
-    "build": "echo 'Using existing www folder'"
+    "optimize-images": "node tools/optimize-images.js",
+    "build": "npm run optimize-images && vite build"
   },
   "dependencies": {
     "@capacitor/core": "latest"
   },
   "devDependencies": {
-    "@capacitor/cli": "latest"
+    "@capacitor/cli": "latest",
+    "@capacitor/android": "latest",
+    "@capacitor/assets": "latest",
+    "sharp": "^0.33.0"
   }
 }
