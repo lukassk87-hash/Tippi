@@ -1,16 +1,20 @@
-/* ============================================================
-   GLOBAL
-============================================================ */
-body {
-  margin: 0;
-  background: #111;
-  font-family: system-ui, sans-serif;
-  color: white;
+:root{
+  --bg: #111;
+  --fg: #eee;
+  --accent: #28a745;
+  --danger: #dc3545;
 }
 
-/* ============================================================
-   HAUPTMENÜ (index.html)
-============================================================ */
+/* Grundlayout */
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--bg);
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;
+  color:var(--fg);
+}
+
+/* Hauptmenü / Buttons */
 #mainMenu {
   position: fixed;
   inset: 0;
@@ -18,160 +22,164 @@ body {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 25px;
+  gap: 20px;
   text-align: center;
-}
-
-body.game-active #mainMenu {
-  display: none;
-}
-
-#mainMenu h1 {
-  font-size: 60px;
-  margin-bottom: 20px;
-}
-
-#menuImage {
-  width: 180px;
-  height: 180px;
-  object-fit: cover;
-  border-radius: 12px;
-  margin-bottom: 20px;
 }
 
 .menuBtn {
-  padding: 15px 30px;
-  font-size: 22px;
-  border: none;
+  padding:12px 20px;
+  border-radius:8px;
+  border:0;
+  background:#2b2b2f;
+  color:var(--fg);
+  cursor:pointer;
+  font-size:16px;
+}
+
+/* Pack Spiel */
+#packGame {
+  max-width: 820px;
+  margin: 18px auto;
+  padding: 12px;
+  color: var(--fg);
+}
+
+#packGame header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  margin-bottom:12px;
+}
+
+#packArea {
+  display:flex;
+  justify-content:center;
+  margin-bottom:12px;
+}
+
+#imageWrapPack {
+  position:relative;
+  width:100%;
+  max-width:640px;
+  aspect-ratio: 1 / 1;
+  border-radius:10px;
+  overflow:hidden;
+  background:#111;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+  transition: box-shadow 220ms cubic-bezier(.2,.9,.2,1), outline 220ms cubic-bezier(.2,.9,.2,1);
+}
+
+/* base image */
+#imageWrapPack img {
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+  user-select:none;
+  -webkit-user-drag:none;
+}
+
+/* overlay for invisible grid (captures clicks) */
+#packOverlay {
+  position:absolute;
+  inset:0;
+  z-index:20;
+  background: transparent;
+}
+
+/* term overlay (großer Begriff) */
+#termOverlay {
+  position:absolute;
+  inset:0;
+  z-index:40;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  pointer-events:none;
+  opacity:0;
+  transition: opacity 120ms ease;
+}
+
+#termOverlay.show { opacity:1; }
+
+#termOverlay .termBox {
+  background: rgba(0,0,0,0.72);
+  color: #fff;
+  padding: 18px 26px;
   border-radius: 10px;
-  background: #444;
-  color: white;
-  cursor: pointer;
-  width: 250px;
+  font-size: clamp(22px, 7vw, 56px);
+  font-weight: 800;
+  text-align:center;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.7);
 }
 
-.menuBtn:hover {
-  background: #666;
+/* Controls */
+#packControls {
+  display:flex;
+  gap:10px;
+  justify-content:center;
+  margin-bottom:12px;
 }
 
-/* ============================================================
-   SPIEL (game.html)
-============================================================ */
-
-#info,
-#countdown,
-#hintText,
-#nextRoundBtn {
-  display: none;
+#packMessage {
+  text-align:center;
+  font-size:15px;
+  min-height:22px;
 }
 
-body.game-active #info,
-body.game-active #countdown,
-body.game-active #hintText,
-body.game-active #nextRoundBtn {
-  display: block;
+/* Game over box */
+#packGameOver {
+  text-align:center;
+  margin-top:12px;
 }
 
-.icon {
+/* STÄRKERER, DICKERER FLASH (mind. 25px Rahmen) */
+#imageWrapPack.flash-green {
+  outline: 25px solid rgba(40,200,120,0.18);
+  box-shadow:
+    0 0 0 36px rgba(40,200,120,0.06),
+    0 0 80px 18px rgba(40,200,120,0.10),
+    0 12px 40px rgba(0,0,0,0.6);
+  transition: box-shadow 260ms cubic-bezier(.2,.9,.2,1), outline 260ms cubic-bezier(.2,.9,.2,1);
+}
+
+#imageWrapPack.flash-red {
+  outline: 25px solid rgba(200,40,40,0.18);
+  box-shadow:
+    0 0 0 36px rgba(200,40,40,0.06),
+    0 0 80px 18px rgba(200,40,40,0.10),
+    0 12px 40px rgba(0,0,0,0.6);
+  transition: box-shadow 260ms cubic-bezier(.2,.9,.2,1), outline 260ms cubic-bezier(.2,.9,.2,1);
+}
+
+#imageWrapPack.flash-green::after,
+#imageWrapPack.flash-red::after {
+  content: "";
   position: absolute;
-  display: none;
-  z-index: 5;
-}
-
-.hitbox-debug {
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(200,200,200,0.25);
+  inset: -18px;
+  border-radius: 16px;
   pointer-events: none;
-  display: none;
-  z-index: 3;
+  opacity: 0.95;
+  transform: scale(1);
+  transition: transform 260ms ease, opacity 260ms ease;
 }
 
-#info {
-  position: fixed;
-  top: 40px;
-  left: 10px;
-  font-size: 18px;
+#imageWrapPack.flash-green::after {
+  box-shadow: 0 0 120px 36px rgba(40,200,120,0.06);
+  transform: scale(1.02);
 }
 
-#countdown {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 60px;
-  font-weight: bold;
-  z-index: 20;
+#imageWrapPack.flash-red::after {
+  box-shadow: 0 0 120px 36px rgba(200,40,40,0.06);
+  transform: scale(1.02);
 }
 
-#hintText {
-  position: fixed;
-  bottom: 200px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 18px;
-  text-align: center;
-  width: 80%;
-  line-height: 1.3;
-  z-index: 30;
-}
+/* ensure preview boxes are hidden */
+.preview-box { display:none !important; }
 
-#nextRoundBtn {
-  position: fixed;
-  bottom: 120px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 15px 25px;
-  font-size: 20px;
-  border: none;
-  border-radius: 8px;
-  background: #28a745;
-  color: white;
-  cursor: pointer;
-  z-index: 30;
-}
-
-/* Game Over */
-#gameOverContainer {
-  position: fixed;
-  inset: 0;
-  display: none;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  z-index: 100;
-}
-
-#gameOverOverlay {
-  text-align: center;
-  margin-bottom: 40px;
-}
-
-#gameOverOverlay h1 {
-  font-size: 60px;
-  margin: 0;
-}
-
-#gameOverOverlay img {
-  width: 180px;
-  height: 180px;
-  object-fit: cover;
-  border-radius: 10px;
-  margin-top: 25px;
-}
-
-#restartBtn {
-  margin-top: 25px;
-  padding: 15px 25px;
-  font-size: 22px;
-  border: none;
-  border-radius: 8px;
-  background: #dc3545;
-  color: white;
-  cursor: pointer;
-}
-
-#highscoreBox {
-  font-size: 20px;
-  text-align: center;
+/* responsive tweaks */
+@media (max-width:420px){
+  #packGame header h1{font-size:18px}
+  .menuBtn{font-size:14px}
 }
