@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Tippi — Grid Overlay (10×10)</title>
+  <link rel="stylesheet" href="css/grid.css">
+</head>
+<body>
+  <main id="app">
+    <h1>Grid Overlay — 10 × 10 Quadranten</h1>
+
+    <div class="controls">
+      <button id="toggleBorders">Rahmen umschalten</button>
+      <button id="clearSelection">Auswahl löschen</button>
+      <button id="exportSelection">Auswahl kopieren</button>
+      <span id="info">Klicke auf Quadranten, um sie zu markieren.</span>
+    </div>
+
+    <div id="imageWrap">
+      <img id="baseImage" src="resources/miss.jpg" alt="miss">
+      <div id="overlay" aria-hidden="true"></div>
+    </div>
+
+    <div id="selectionList" aria-live="polite"></div>
+  </main>
+
+  <script src="js/grid.js"></script>
+</body>
+</html>
