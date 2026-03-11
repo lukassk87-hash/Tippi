@@ -23,7 +23,8 @@ const restartBtn = document.getElementById("restartBtn");
 
 let mistakes = 0;
 let round = 1;
-let gameActive = true;
+/* Wichtig: Spiel ist initial nicht aktiv. Erst beim Klick auf Start wird es aktiv. */
+let gameActive = false;
 
 let positions = [];
 let icons = [];
@@ -38,11 +39,20 @@ let mistakesEnabled = false;
 
 /* ============================================================
    STARTBUTTON
+   - aktiviert das Spiel erst beim Klick
 ============================================================ */
 nextBtn.addEventListener("click", () => {
+  // Verstecke UI
   hintText.style.display = "none";
-  mistakesEnabled = false;
   nextBtn.style.display = "none";
+
+  // Spiel aktivieren
+  gameActive = true;
+
+  // Fehler zählen erst nach Countdown erlauben
+  mistakesEnabled = false;
+  tapEnabled = false;
+
   spawnIcons();
 });
 
@@ -132,6 +142,7 @@ function spawnIcons() {
     icon.style.top = (pos.y - ICON_SIZE / 2) + "px";
     icon.style.width = ICON_SIZE + "px";
     icon.style.height = ICON_SIZE + "px";
+    icon.style.display = "none";
     document.body.appendChild(icon);
     icons.push(icon);
 
@@ -172,20 +183,28 @@ async function showIconsWithCountdown() {
 
   countdown.style.display = "none";
 
+  // Jetzt darf getappt werden
   tapEnabled = true;
   mistakesEnabled = true;
 }
 
+/* Hilfsfunktion */
 function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 /* ============================================================
    TAP LOGIK
+   - robust gegen Klicks auf UI-Buttons/Links
 ============================================================ */
 function handleTap(event) {
 
+  // Wenn Spiel nicht aktiv oder Taps nicht erlaubt → ignorieren
   if (!gameActive || !tapEnabled) return;
+
+  // Ignoriere Klicks auf Buttons oder Links (UI)
+  const clickedButton = event.target.closest("button, a");
+  if (clickedButton) return;
 
   const tapX = event.clientX;
   const tapY = event.clientY;
@@ -243,16 +262,18 @@ function handleTap(event) {
     if (mistakes >= 3) {
       gameActive = false;
       mistakesEnabled = false;
+      tapEnabled = false;
 
       const score = round - 1;
 
-      if (checkForHighscore(score)) {
+      if (checkForHighscore && typeof checkForHighscore === "function" && checkForHighscore(score)) {
         const name = prompt(`Neuer Highscore! Runde ${score}. Dein Name:`);
-        if (name) addHighscore(name, score);
+        if (name && typeof addHighscore === "function") addHighscore(name, score);
       }
 
-      showHighscores();
+      if (typeof showHighscores === "function") showHighscores();
 
+      // GameOver anzeigen
       gameOverContainer.style.display = "flex";
     }
   }
@@ -290,21 +311,31 @@ function flashRed() {
    GAME OVER / NEUSTART
 ============================================================ */
 function clearIcons() {
-  icons.forEach(el => el.remove());
-  hitboxes.forEach(el => el.remove());
+  icons.forEach(el => {
+    try { el.remove(); } catch(e) {}
+  });
+  hitboxes.forEach(el => {
+    try { el.remove(); } catch(e) {}
+  });
+  icons = [];
+  hitboxes = [];
+  positions = [];
 }
 
 function restartGame() {
+  // Sauber zurücksetzen
   mistakes = 0;
   round = 1;
-  gameActive = true;
+  gameActive = false;
   mistakesEnabled = false;
+  tapEnabled = false;
 
   info.textContent = "Fehler: 0 / 3 – Runde 1";
   clearIcons();
   highscoreBox.innerHTML = "";
   gameOverContainer.style.display = "none";
 
+  // Zurück zur Startseite
   location.href = "index.html";
 }
 
@@ -312,6 +343,7 @@ restartBtn.addEventListener("click", restartGame);
 
 /* ============================================================
    GLOBAL TAP HANDLER
+   - Ignoriere Klicks auf Buttons/Links, damit Start-Klick nicht als Miss zählt
 ============================================================ */
 document.addEventListener("click", (e) => {
   handleTap(e);
