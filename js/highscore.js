@@ -34,7 +34,7 @@ function renderHighscoreList() {
   } else {
     box.innerHTML =
       "<b>Top 3 Highscores</b><br><br>" +
-      list.map((e, i) => `${i+1}. ${e.name}: ${e.score}`).join("<br>");
+      list.map((e, i) => `${i+1}. ${escapeHtml(e.name)}: ${e.score}`).join("<br>");
   }
 }
 
@@ -48,12 +48,26 @@ function showHighscores() {
     } else {
       boxGame.innerHTML =
         "<b>Top 3 Highscores</b><br><br>" +
-        list.map((e, i) => `${i+1}. ${e.name}: ${e.score}`).join("<br>");
+        list.map((e, i) => `${i+1}. ${escapeHtml(e.name)}: ${e.score}`).join("<br>");
     }
   }
 
   renderHighscoreList();
 }
 
+function escapeHtml(str) {
+  if (typeof str !== "string") return "";
+  return str.replace(/[&<>"']/g, function(m) {
+    return {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[m];
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   renderHighscoreList();
+});
