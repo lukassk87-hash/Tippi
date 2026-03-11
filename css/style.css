@@ -70,12 +70,11 @@ body.game-active #mainMenu {
   display: none;
 }
 
-/* Nur wenn body.game-active gesetzt ist → Spiel sichtbar */
+/* Nur wenn body.game-active gesetzt ist → Spiel sichtbar (ohne GameOver) */
 body.game-active #info,
 body.game-active #countdown,
 body.game-active #hintText,
-body.game-active #nextRoundBtn,
-body.game-active #gameOverContainer {
+body.game-active #nextRoundBtn {
   display: block;
 }
 
@@ -148,6 +147,7 @@ body.game-active #gameOverContainer {
 #gameOverContainer {
   position: fixed;
   inset: 0;
+  display: none; /* bleibt standardmäßig versteckt; JS zeigt es bei GameOver */
   flex-direction: column;
   justify-content: center;
   align-items: center;
