@@ -1,9 +1,3 @@
-/* pack.js (Flash 200ms, Term 1000ms, Highscore-Integration)
-   - TERM_DISPLAY_MS = 1000 (Begriff 1s)
-   - FLASH_DURATION_MS = 200 (kurzer, dicker Flash)
-   - Bei Game Over: Highscore prüfen, Name abfragen, speichern (game = "Ich tippe meinen Päcki")
-*/
-
 document.addEventListener("DOMContentLoaded", () => {
 
   const PARTS = {
@@ -153,6 +147,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Highscore prüfen und ggf. speichern
     try {
       const score = round;
+      // Prompt must be triggered from user gesture context; ensure we call prompt synchronously
       if (typeof checkForHighscore === "function" && checkForHighscore(score, "Ich tippe meinen Päcki")) {
         const name = prompt(`Neuer Highscore für "Ich tippe meinen Päcki"! Runde ${score}. Dein Name:`);
         if (name && typeof addHighscore === "function") {
@@ -197,8 +192,9 @@ document.addEventListener("DOMContentLoaded", () => {
       flashImage("red", FLASH_DURATION_MS);
       setMessage(`Falsch! Erwartet war: ${expectedPart}`);
       if (mistakes >= 3) {
+        // Call gameOver synchronously so prompt is allowed by browser (avoid setTimeout here)
         acceptingInput = false;
-        setTimeout(() => gameOver(), 400);
+        gameOver();
       } else {
         acceptingInput = true;
       }
