@@ -36,10 +36,18 @@ let HIT_RADIUS = ICON_SIZE * 0.6;
 
 let mistakesEnabled = false;
 
+/* Timing / duplicate guards */
+let lastTapTime = 0;
+let ignoreClicksDuringStart = false;
+
 /* ============================================================
    STARTBUTTON
+   - stoppt Propagation, setzt Flag, startet Platzierung
 ============================================================ */
-nextBtn.addEventListener("click", () => {
+nextBtn.addEventListener("click", (ev) => {
+  ev.stopPropagation();
+  ev.preventDefault();
+
   hintText.style.display = "none";
   nextBtn.style.display = "none";
 
@@ -47,6 +55,7 @@ nextBtn.addEventListener("click", () => {
   mistakesEnabled = false;
   tapEnabled = false;
 
+  ignoreClicksDuringStart = true; // bis Countdown fertig
   spawnIcons();
 });
 
@@ -122,6 +131,7 @@ function spawnIcons() {
   }
 
   positions = placed;
+  console.log("spawnIcons: positions.length =", positions.length);
 
   icons = [];
   hitboxes = [];
@@ -151,6 +161,7 @@ function spawnIcons() {
     hitboxes.push(hb);
   }
 
+  console.log("spawnIcons: icons.length =", icons.length, "hitboxes.length =", hitboxes.length);
   showIconsWithCountdown();
 }
 
@@ -179,6 +190,9 @@ async function showIconsWithCountdown() {
 
   tapEnabled = true;
   mistakesEnabled = true;
+  ignoreClicksDuringStart = false;
+
+  console.log("showIconsWithCountdown: taps enabled, icons in DOM =", document.querySelectorAll(".icon").length);
 }
 
 function wait(ms) {
@@ -187,13 +201,33 @@ function wait(ms) {
 
 /* ============================================================
    TAP LOGIK
+   - pointerdown verwendet, duplicate suppression, guards
 ============================================================ */
 function handleTap(event) {
-
+  // Nur wenn Spiel aktiv und Taps erlaubt
   if (!gameActive || !tapEnabled) return;
 
+  // Wenn noch keine Icons platziert sind, ignoriere Taps
+  if (!positions || positions.length === 0) {
+    console.log("handleTap: ignored because no positions yet");
+    return;
+  }
+
+  // Duplicate suppression (Touch -> pointer -> click)
+  const now = Date.now();
+  if (now - lastTapTime < 350) {
+    console.log("handleTap: duplicate event ignored", now - lastTapTime);
+    return;
+  }
+  lastTapTime = now;
+
+  // Ignoriere Klicks auf Buttons/Links
   const clickedButton = event.target.closest("button, a");
-  if (clickedButton) return;
+  if (clickedButton) {
+    // Wenn es der Restart-Button ist, allow normal flow (restartBtn has its own listener)
+    if (clickedButton.id === "restartBtn") return;
+    return;
+  }
 
   const tapX = event.clientX;
   const tapY = event.clientY;
@@ -241,10 +275,10 @@ function handleTap(event) {
   }
 
   if (!hitSomething) {
-
     if (!mistakesEnabled) return;
 
     mistakes++;
+    console.log("mistake incremented:", mistakes, "remaining positions:", positions.length, "tapEnabled:", tapEnabled);
     info.textContent = `Fehler: ${mistakes} / 3 – Runde ${round}`;
     flashRed();
 
@@ -255,12 +289,12 @@ function handleTap(event) {
 
       const score = round - 1;
 
-      if (checkForHighscore(score)) {
+      if (typeof checkForHighscore === "function" && checkForHighscore(score)) {
         const name = prompt(`Neuer Highscore! Runde ${score}. Dein Name:`);
-        if (name) addHighscore(name, score);
+        if (name && typeof addHighscore === "function") addHighscore(name, score);
       }
 
-      showHighscores();
+      if (typeof showHighscores === "function") showHighscores();
 
       gameOverContainer.style.display = "flex";
     }
@@ -271,7 +305,6 @@ function handleTap(event) {
    FLASH RED
 ============================================================ */
 function flashRed() {
-
   document.body.style.backgroundColor = "#550000";
 
   for (let i = 0; i < positions.length; i++) {
@@ -282,7 +315,6 @@ function flashRed() {
   }
 
   setTimeout(() => {
-
     document.body.style.backgroundColor = "#111";
 
     for (let i = 0; i < positions.length; i++) {
@@ -291,7 +323,6 @@ function flashRed() {
         icons[i].src = IMG_START;
       }
     }
-
   }, 500);
 }
 
@@ -299,8 +330,12 @@ function flashRed() {
    GAME OVER / NEUSTART
 ============================================================ */
 function clearIcons() {
-  icons.forEach(el => el.remove());
-  hitboxes.forEach(el => el.remove());
+  icons.forEach(el => {
+    try { el.remove(); } catch (e) {}
+  });
+  hitboxes.forEach(el => {
+    try { el.remove(); } catch (e) {}
+  });
   icons = [];
   hitboxes = [];
   positions = [];
@@ -321,11 +356,17 @@ function restartGame() {
   location.href = "index.html";
 }
 
-restartBtn.addEventListener("click", restartGame);
+restartBtn.addEventListener("click", (ev) => {
+  ev.stopPropagation();
+  ev.preventDefault();
+  restartGame();
+});
 
 /* ============================================================
-   GLOBAL TAP HANDLER
+   GLOBAL INPUT HANDLER
+   - Verwende pointerdown (besser für Touch), vermeide click duplicates
 ============================================================ */
-document.addEventListener("click", (e) => {
+document.addEventListener("pointerdown", (e) => {
+  if (ignoreClicksDuringStart) return;
   handleTap(e);
 });
