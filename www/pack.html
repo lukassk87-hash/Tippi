@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Ich tippe meinen Päcki</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="game-active">
+
+  <div id="packGame">
+    <header>
+      <h1>Ich tippe meinen Päcki</h1>
+      <div id="packInfo">Runde: <span id="roundNum">0</span> · Fehler: <span id="mistakes">0</span>/3</div>
+    </header>
+
+    <div id="packArea">
+      <div id="imageWrapPack">
+        <img id="packImage" src="resources/miss.jpg" alt="Bild">
+        <div id="packOverlay" aria-hidden="true"></div>
+        <div id="termOverlay" aria-hidden="true"></div>
+      </div>
+    </div>
+
+    <div id="packControls">
+      <button id="startPackBtn">Spiel starten</button>
+      <button id="backToMenuBtn">Zurück zum Menü</button>
+    </div>
+
+    <div id="packMessage" aria-live="polite"></div>
+
+    <div id="packGameOver" style="display:none;">
+      <h2>Game Over</h2>
+      <div id="finalScore"></div>
+      <button id="packRestart">Neustart</button>
+    </div>
+  </div>
+
+  <script src="js/pack.js"></script>
+  <script src="js/highscore.js"></script>
+</body>
+</html>
