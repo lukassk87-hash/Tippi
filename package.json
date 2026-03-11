@@ -1,9 +1,17 @@
 {
+  "name": "tippi",
+  "version": "1.0.0",
+  "description": "Tippi Game",
   "type": "module",
+  "main": "index.js",
   "scripts": {
     "build": "echo 'No build step needed' && exit 0",
     "android": "npx cap sync android && npx cap open android",
     "optimize-images": "node tools/optimize-images.js"
+  },
+  "dependencies": {
+    "@capacitor/android": "latest",
+    "@capacitor/core": "latest"
   },
   "devDependencies": {
     "sharp": "^0.32.0"
