@@ -245,16 +245,35 @@ body{
   z-index: 1000;
 }
 
+/* zentrierter, großer, giftgrüner Countdown */
 #countdown {
   position: fixed;
-  top: 12px;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0,0,0,0.6);
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-weight: 700;
-  z-index: 1000;
+  transform: translate(-50%, -50%);
+  display: block;
+  z-index: 11000;
+  color: #39ff14;                     /* giftgrün */
+  background: rgba(0,0,0,0.10);       /* leichter Kontrast, optional */
+  padding: 18px 28px;
+  border-radius: 14px;
+  font-weight: 900;
+  font-size: clamp(36px, 10vw, 96px); /* skaliert mit Bildschirm */
+  line-height: 1;
+  text-align: center;
+  min-width: 120px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.18), 0 0 28px rgba(57,255,20,0.06);
+  -webkit-text-stroke: 0.6px rgba(0,0,0,0.12);
+  pointer-events: none;               /* verhindert unbeabsichtigte Klicks */
+  will-change: transform, opacity;
+  animation: countdown-pulse 900ms ease-in-out infinite;
+}
+
+/* dezente Pulsanimation */
+@keyframes countdown-pulse {
+  0%   { transform: translate(-50%, -50%) scale(1);   opacity: 1; }
+  50%  { transform: translate(-50%, -50%) scale(1.06); opacity: 0.98; }
+  100% { transform: translate(-50%, -50%) scale(1);   opacity: 1; }
 }
 
 /* Game Over overlay */
