@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Ich tippe meinen Päcki</title>
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="www/css/style.css">
 </head>
 <body class="game-active">
 
@@ -18,7 +18,7 @@
 
     <div id="packArea">
       <div id="imageWrapPack">
-        <img id="packImage" src="resources/miss.jpg" alt="Bild">
+        <img id="packImage" src="www/resources/miss.jpg" alt="Bild">
         <!-- unsichtbares Grid (10x10) wird in JS berechnet -->
         <div id="packOverlay" aria-hidden="true"></div>
         <!-- Term Overlay: groß, mittig, temporär sichtbar -->
@@ -41,8 +41,8 @@
   </div>
 
   <!-- Highscore-Funktionen zuerst laden -->
-  <script src="js/highscore.js"></script>
+  <script src="www/js/highscore.js"></script>
   <!-- Dann das Spielskript, das die Highscore-Funktionen nutzt -->
-  <script src="js/pack.js"></script>
+  <script src="www/js/pack.js"></script>
 </body>
 </html>
