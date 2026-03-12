@@ -1,8 +1,10 @@
 /* =========================
    miss.js (komplett)
    - Preview 20% langsamer (PREVIEW_DURATION_MULTIPLIER = 2.4)
-   - Bei Lebenverlust: Spiel pausieren, Infotext bestätigen für neuen Versuch
+   - Bei Lebenverlust: Spiel pausiert sofort, zeigt "Leben verloren" Modal mit "Weiter geht's"
+   - Nach Bestätigung: Fortsetzen in derselben Runde vom Startpunkt (kein neues Preview)
    - Bei aufgebrauchten Leben: Game Over Modal mit Neustart / Hauptmenü
+   - Verhindert mehrfaches Abziehen durch lossInProgress-Flag
    - Robuste DOM-Guards, Debounced resize, dynamische Abweichung
    ========================= */
 
@@ -170,6 +172,9 @@ let playing = false;
 let dragging = false;
 let currentAlong = 0;
 let lastAlong = 0;
+
+// Prevent re-entrant loss handling
+let lossInProgress = false;
 
 const PRESTART_EXIT_BUFFER = 8;
 const END_THRESHOLD = 6;
@@ -395,7 +400,7 @@ function draw() {
 }
 
 /* ---------------------------
-   Leben / Verlustbehandlung (mit Modal-Pause)
+   Leben / Verlustbehandlung (fixed)
    --------------------------- */
 
 function updateLivesUI() {
@@ -404,44 +409,46 @@ function updateLivesUI() {
 }
 
 async function handleLoss() {
-  // Flash and short pause
+  // Verhindere Re-Entrancy: wenn bereits Loss-Handling läuft, ignoriere weitere Aufrufe
+  if (lossInProgress) return;
+  lossInProgress = true;
+
+  // Sofort visuelles Feedback und Interaktionen pausieren
   flash("red");
+  pauseInteraction();
+
+  // Kurze Verzögerung, damit Flash sichtbar ist
   await new Promise(res => setTimeout(res, 250));
 
-  // Decrement lives
+  // Leben genau einmal abziehen
   lives = Math.max(0, lives - 1);
   updateLivesUI();
 
-  // Pause game: remove interaction handlers and mark not playing
-  pauseInteraction();
-
+  // Wenn noch Leben vorhanden sind: Modal anzeigen und auf Bestätigung warten
   if (lives > 0) {
-    // Show modal informing player and wait for confirmation to retry
-    const choice = await showInfoModal(
-      `Du hast ein Leben verloren. Noch verbleibende Leben: <strong>${lives}</strong>.<br>Bereit für einen neuen Versuch?`,
-      [{ id: 'retry', label: 'Neuer Versuch', className: 'primary' }]
+    await showInfoModal(
+      `Du hast ein Leben verloren. Verbleibende Leben: <strong>${lives}</strong>.<br>Drücke "Weiter geht's", um es erneut zu versuchen.`,
+      [{ id: 'continue', label: 'Weiter geht\'s', className: 'primary' }]
     );
 
-    if (choice === 'retry') {
-      // restart same round: regenerate path, preview, prestart
-      path = generatePathForRound(round);
-      segsInfo = computeSegments(path);
-      currentAlong = 0;
-      lastAlong = 0;
-      await animatePreview(path);
-      if (path && path.length > 0 && miss) {
-        const startP = path[0];
-        miss.style.left = (startP.x - missSize.w / 2) + "px";
-        miss.style.top = (startP.y - missSize.h / 2) + "px";
-      }
-      draw();
-      enablePrestartMode();
-      return;
-    } else {
-      // fallback: re-enable prestart
-      enablePrestartMode();
-      return;
+    // KEIN neues Preview! Miss zurück auf Startposition der aktuellen Runde setzen
+    if (path && path.length > 0 && miss) {
+      const startP = path[0];
+      miss.style.left = (startP.x - missSize.w / 2) + "px";
+      miss.style.top = (startP.y - missSize.h / 2) + "px";
+    } else if (miss) {
+      const sx = Math.round(width / 2);
+      const sy = Math.round(height * START_Y_FACTOR);
+      miss.style.left = (sx - missSize.w / 2) + "px";
+      miss.style.top = (sy - missSize.h / 2) + "px";
     }
+
+    // Prestart-Modus wieder aktivieren, damit der Spieler erneut vom Startpunkt losziehen kann
+    enablePrestartMode();
+
+    // Loss-Handling abgeschlossen
+    lossInProgress = false;
+    return;
   }
 
   // lives == 0 -> Game Over
@@ -453,7 +460,6 @@ async function handleLoss() {
     console.warn("Highscore.recordEndOfGame failed", e);
   }
 
-  // Show Game Over modal with options
   const goChoice = await showInfoModal(
     `<strong>Game Over</strong><br>Du hast alle Leben verloren.<br>Erreichte Runde: <strong>${round}</strong>`,
     [
@@ -473,6 +479,8 @@ async function handleLoss() {
     segsInfo = computeSegments(path);
     currentAlong = 0;
     lastAlong = 0;
+
+    // Beim Neustart ist Preview erwünscht
     await animatePreview(path);
     if (path && path.length > 0 && miss) {
       const startP = path[0];
@@ -481,17 +489,19 @@ async function handleLoss() {
     }
     draw();
     enablePrestartMode();
+    lossInProgress = false;
     return;
   }
 
   if (goChoice === 'menu') {
-    // Navigate back to main menu
     try { window.location.href = 'index.html'; } catch (e) {}
+    // no further action
     return;
   }
 
-  // default fallback
+  // fallback
   enablePrestartMode();
+  lossInProgress = false;
 }
 
 /* ---------------------------
@@ -513,12 +523,6 @@ function pauseInteraction() {
   safeRemoveListener(window, "pointerup", miss._upHandler);
 
   if (miss) miss.classList.remove("dragging");
-}
-
-function resumeInteractionAfterModal() {
-  // This function intentionally left minimal: caller should decide whether to
-  // re-enable prestart or evaluation mode depending on game state.
-  // Typically we call enablePrestartMode() after modal confirmation.
 }
 
 /* ---------------------------
@@ -580,6 +584,7 @@ function enablePrestartMode() {
       const proj = projectPointOnPath(segsInfo, { x: midX, y: midY });
 
       if (proj.dist > getMaxDeviationPx()) {
+        // Immediately handle loss (will pause and show modal)
         await handleLoss();
         return;
       }
@@ -656,6 +661,7 @@ function startEvaluationMode(initialProj) {
     const proj = projectPointOnPath(segsInfo, { x, y });
 
     if (proj.dist > getMaxDeviationPx()) {
+      // Immediately handle loss (will pause and show modal)
       await handleLoss();
       return;
     }
