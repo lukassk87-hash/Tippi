@@ -1,13 +1,16 @@
 /* =========================
-   miss.js (komplett, final)
-   - Buttons weiter unten / Startpunkt weiter unten / Zielpunkt weiter oben
-   - START_Y_FACTOR = 0.18, TARGET_Y_FACTOR = 0.78, PRESTART_THRESHOLD_FACTOR = 0.60
+   miss.js (komplett)
+   - Preview 20% langsamer (PREVIEW_DURATION_MULTIPLIER = 2.4)
+   - Bei Lebenverlust: Spiel pausieren, Infotext bestätigen für neuen Versuch
+   - Bei aufgebrauchten Leben: Game Over Modal mit Neustart / Hauptmenü
    - Robuste DOM-Guards, Debounced resize, dynamische Abweichung
    ========================= */
 
 'use strict';
 
-// DOM Elemente (können beim Laden noch null sein)
+/* ---------------------------
+   DOM Elemente (können beim Laden noch null sein)
+   --------------------------- */
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas ? canvas.getContext("2d") : null;
 const miss = document.getElementById("miss");
@@ -15,7 +18,83 @@ const overlay = document.getElementById("overlay");
 const startBtn = document.getElementById("startBtn");
 const roundNumEl = document.getElementById("roundNum");
 
-// Lives UI element (erstellt, falls nicht vorhanden)
+/* ---------------------------
+   Modal / UI helpers
+   --------------------------- */
+
+let modalCounter = 0;
+function createModalElement() {
+  const id = `miss-modal-${++modalCounter}`;
+  const wrapper = document.createElement('div');
+  wrapper.id = id;
+  wrapper.style.position = 'fixed';
+  wrapper.style.left = '0';
+  wrapper.style.top = '0';
+  wrapper.style.width = '100%';
+  wrapper.style.height = '100%';
+  wrapper.style.display = 'flex';
+  wrapper.style.alignItems = 'center';
+  wrapper.style.justifyContent = 'center';
+  wrapper.style.zIndex = 100000;
+  wrapper.style.pointerEvents = 'auto';
+  wrapper.style.background = 'rgba(0,0,0,0.45)';
+  return wrapper;
+}
+
+/**
+ * showInfoModal(message, buttons)
+ * - message: string (HTML allowed)
+ * - buttons: [{ id: 'ok', label: 'OK', className: 'primary' }, ...]
+ * Returns Promise resolving to clicked button id.
+ */
+function showInfoModal(message, buttons = [{ id: 'ok', label: 'OK' }]) {
+  return new Promise(resolve => {
+    const wrapper = createModalElement();
+    const box = document.createElement('div');
+    box.style.minWidth = '280px';
+    box.style.maxWidth = '92%';
+    box.style.background = '#111';
+    box.style.color = '#fff';
+    box.style.padding = '18px';
+    box.style.borderRadius = '12px';
+    box.style.boxShadow = '0 10px 40px rgba(0,0,0,0.6)';
+    box.style.textAlign = 'center';
+    box.style.pointerEvents = 'auto';
+    box.innerHTML = `<div style="margin-bottom:12px; font-size:16px; line-height:1.3;">${message}</div>`;
+
+    const btnRow = document.createElement('div');
+    btnRow.style.display = 'flex';
+    btnRow.style.justifyContent = 'center';
+    btnRow.style.gap = '10px';
+    btnRow.style.marginTop = '6px';
+
+    buttons.forEach(b => {
+      const btn = document.createElement('button');
+      btn.textContent = b.label;
+      btn.dataset.mid = b.id;
+      btn.style.padding = '8px 14px';
+      btn.style.borderRadius = '8px';
+      btn.style.border = 'none';
+      btn.style.cursor = 'pointer';
+      btn.style.fontSize = '15px';
+      btn.style.background = b.className === 'primary' ? '#2ecc71' : '#333';
+      btn.style.color = '#fff';
+      btn.addEventListener('click', () => {
+        try { document.body.removeChild(wrapper); } catch (e) {}
+        resolve(b.id);
+      });
+      btnRow.appendChild(btn);
+    });
+
+    box.appendChild(btnRow);
+    wrapper.appendChild(box);
+    document.body.appendChild(wrapper);
+  });
+}
+
+/* ---------------------------
+   Lives UI element (erstellt, falls nicht vorhanden)
+   --------------------------- */
 let lives = 3;
 function ensureLivesUI() {
   let el = document.getElementById("livesDisplay");
@@ -23,22 +102,25 @@ function ensureLivesUI() {
     el = document.createElement("div");
     el.id = "livesDisplay";
     el.style.position = "fixed";
-    el.style.left = "12px";
-    el.style.bottom = "12px";
-    el.style.zIndex = 9999;
-    el.style.padding = "8px 12px";
-    el.style.borderRadius = "8px";
-    el.style.background = "rgba(0,0,0,0.6)";
+    el.style.left = "16px";
+    el.style.bottom = "28px";
+    el.style.zIndex = 99999;
+    el.style.padding = "10px 14px";
+    el.style.borderRadius = "10px";
+    el.style.background = "rgba(0,0,0,0.65)";
     el.style.color = "#fff";
     el.style.fontFamily = "system-ui, sans-serif";
-    el.style.fontSize = "14px";
+    el.style.fontSize = "15px";
+    el.style.pointerEvents = "none";
     document.body.appendChild(el);
   }
   el.textContent = `Leben: ${lives}`;
 }
 ensureLivesUI();
 
-// Defensive helper: safe add/remove listeners
+/* ---------------------------
+   Defensive helper: safe add/remove listeners
+   --------------------------- */
 function safeAddListener(el, evt, handler, opts) {
   if (!el || typeof el.addEventListener !== 'function') return;
   el.addEventListener(evt, handler, opts);
@@ -48,7 +130,9 @@ function safeRemoveListener(el, evt, handler, opts) {
   try { el.removeEventListener(evt, handler, opts); } catch (e) {}
 }
 
-// Safe getBoundingClientRect
+/* ---------------------------
+   Safe getBoundingClientRect
+   --------------------------- */
 function safeGetRect(el) {
   if (!el || typeof el.getBoundingClientRect !== 'function') return null;
   try { return el.getBoundingClientRect(); } catch (e) { return null; }
@@ -57,7 +141,6 @@ function safeGetRect(el) {
 /* ---------------------------
    Spielzustand / Einstellungen
    --------------------------- */
-
 let width = 0;
 let height = 0;
 let path = [];
@@ -69,10 +152,13 @@ let missSize = { w: 80, h: 80 };
 let topQuarterY = 0;
 let debug = false;
 
-// Positioning factors requested
-const START_Y_FACTOR = 0.18;           // Startpunkt bei 18% der Höhe (weiter unten)
-const TARGET_Y_FACTOR = 0.78;          // Zielpunkt bei 78% der Höhe (weiter oben relative to bottom)
-const PRESTART_THRESHOLD_FACTOR = 0.60; // Prestart-Schwelle bei 60% der Höhe
+// Positioning factors
+const START_Y_FACTOR = 0.18;
+const TARGET_Y_FACTOR = 0.78;
+const PRESTART_THRESHOLD_FACTOR = 0.60;
+
+// Preview speed multiplier (20% slower than previous 2.0 -> 2.4)
+const PREVIEW_DURATION_MULTIPLIER = 2.4;
 
 // Wegerkennung: dynamisch berechnet
 function getMaxDeviationPx() {
@@ -91,14 +177,12 @@ const END_THRESHOLD = 6;
 /* ---------------------------
    Resize handler mit Debounce
    --------------------------- */
-
 let resizeTimer = null;
 function resizeGame() {
   if (!canvas) return;
   const w = Math.floor(window.innerWidth);
   const h = Math.floor(window.innerHeight);
 
-  // Canvas-Buffer und CSS-Größe konsistent setzen
   canvas.width = w;
   canvas.height = h;
   canvas.style.width = w + 'px';
@@ -107,7 +191,6 @@ function resizeGame() {
   width = w;
   height = h;
 
-  // Prestart-Schwelle neu berechnen (wird verwendet, um zu prüfen, ob der Spieler "nach unten" gezogen hat)
   topQuarterY = Math.round(height * PRESTART_THRESHOLD_FACTOR);
 
   const rect = safeGetRect(miss);
@@ -126,7 +209,6 @@ resizeGame();
 /* ---------------------------
    Spline / Geometrie
    --------------------------- */
-
 function catmullRom(p0, p1, p2, p3, t) {
   const t2 = t * t;
   const t3 = t2 * t;
@@ -159,11 +241,8 @@ function getSplinePoints(ctrlPoints, samplesPerSeg = 12) {
 /* ---------------------------
    Pfad-Generierung (angepasst)
    --------------------------- */
-
 function generatePathForRound(r) {
-  // Nominaler Start und Ziel jetzt abhängig von den neuen Faktoren
   const nominalStartY = Math.max(EDGE_MARGIN, Math.round(height * START_Y_FACTOR));
-  // Ziel höher setzen (kleinerer Anteil = weiter oben), aber mindestens etwas unterhalb Start
   const targetY = Math.max(nominalStartY + 50, Math.round(height * TARGET_Y_FACTOR));
   const centerX = Math.round(width / 2);
 
@@ -201,7 +280,6 @@ function generatePathForRound(r) {
 /* ---------------------------
    Segment-Helpers
    --------------------------- */
-
 function computeSegments(points) {
   const segs = [];
   let total = 0;
@@ -258,9 +336,8 @@ function projectPointOnPath(si, p) {
 }
 
 /* ---------------------------
-   Preview Animation
+   Preview Animation (slower)
    --------------------------- */
-
 function animatePreview(points) {
   return new Promise(resolve => {
     if (!points || points.length < 2) return resolve();
@@ -268,8 +345,7 @@ function animatePreview(points) {
     const total = segsInfo.total;
 
     const base = Math.max(700, Math.min(2200, total * 0.45));
-    const PREVIEW_DURATION_MULTIPLIER = 2.0;
-    const duration = base * PREVIEW_DURATION_MULTIPLIER;
+    const duration = base * PREVIEW_DURATION_MULTIPLIER; // slower by multiplier
 
     const startTime = performance.now();
 
@@ -301,9 +377,8 @@ function animatePreview(points) {
 }
 
 /* ---------------------------
-   Draw (Canvas bleibt leer; miss DOM bewegt)
+   Draw (Canvas remains mostly empty)
    --------------------------- */
-
 function draw() {
   if (!ctx) return;
   ctx.clearRect(0, 0, width, height);
@@ -320,7 +395,7 @@ function draw() {
 }
 
 /* ---------------------------
-   Leben / Verlustbehandlung
+   Leben / Verlustbehandlung (mit Modal-Pause)
    --------------------------- */
 
 function updateLivesUI() {
@@ -329,13 +404,71 @@ function updateLivesUI() {
 }
 
 async function handleLoss() {
+  // Flash and short pause
   flash("red");
   await new Promise(res => setTimeout(res, 250));
 
+  // Decrement lives
   lives = Math.max(0, lives - 1);
   updateLivesUI();
 
+  // Pause game: remove interaction handlers and mark not playing
+  pauseInteraction();
+
   if (lives > 0) {
+    // Show modal informing player and wait for confirmation to retry
+    const choice = await showInfoModal(
+      `Du hast ein Leben verloren. Noch verbleibende Leben: <strong>${lives}</strong>.<br>Bereit für einen neuen Versuch?`,
+      [{ id: 'retry', label: 'Neuer Versuch', className: 'primary' }]
+    );
+
+    if (choice === 'retry') {
+      // restart same round: regenerate path, preview, prestart
+      path = generatePathForRound(round);
+      segsInfo = computeSegments(path);
+      currentAlong = 0;
+      lastAlong = 0;
+      await animatePreview(path);
+      if (path && path.length > 0 && miss) {
+        const startP = path[0];
+        miss.style.left = (startP.x - missSize.w / 2) + "px";
+        miss.style.top = (startP.y - missSize.h / 2) + "px";
+      }
+      draw();
+      enablePrestartMode();
+      return;
+    } else {
+      // fallback: re-enable prestart
+      enablePrestartMode();
+      return;
+    }
+  }
+
+  // lives == 0 -> Game Over
+  try {
+    if (typeof Highscore !== 'undefined' && Highscore && typeof Highscore.recordEndOfGame === 'function') {
+      Highscore.recordEndOfGame(round);
+    }
+  } catch (e) {
+    console.warn("Highscore.recordEndOfGame failed", e);
+  }
+
+  // Show Game Over modal with options
+  const goChoice = await showInfoModal(
+    `<strong>Game Over</strong><br>Du hast alle Leben verloren.<br>Erreichte Runde: <strong>${round}</strong>`,
+    [
+      { id: 'restart', label: 'Neustart', className: 'primary' },
+      { id: 'menu', label: 'Hauptmenü', className: 'secondary' }
+    ]
+  );
+
+  if (goChoice === 'restart') {
+    // Reset game state and start from round 1
+    round = 1;
+    lives = 3;
+    updateLivesUI();
+    if (roundNumEl) roundNumEl.textContent = round;
+
     path = generatePathForRound(round);
     segsInfo = computeSegments(path);
     currentAlong = 0;
@@ -351,31 +484,41 @@ async function handleLoss() {
     return;
   }
 
-  try {
-    if (typeof Highscore !== 'undefined' && Highscore && typeof Highscore.recordEndOfGame === 'function') {
-      Highscore.recordEndOfGame(round);
-    }
-  } catch (e) {
-    console.warn("Highscore.recordEndOfGame failed", e);
+  if (goChoice === 'menu') {
+    // Navigate back to main menu
+    try { window.location.href = 'index.html'; } catch (e) {}
+    return;
   }
 
-  round = 1;
-  lives = 3;
-  updateLivesUI();
-  if (roundNumEl) roundNumEl.textContent = round;
-
-  path = generatePathForRound(round);
-  segsInfo = computeSegments(path);
-  currentAlong = 0;
-  lastAlong = 0;
-  await animatePreview(path);
-  if (path && path.length > 0 && miss) {
-    const startP = path[0];
-    miss.style.left = (startP.x - missSize.w / 2) + "px";
-    miss.style.top = (startP.y - missSize.h / 2) + "px";
-  }
-  draw();
+  // default fallback
   enablePrestartMode();
+}
+
+/* ---------------------------
+   Pause / Resume Interaction Helpers
+   --------------------------- */
+
+function pauseInteraction() {
+  prestartActive = false;
+  playing = false;
+  dragging = false;
+
+  // Remove any pointer handlers safely
+  safeRemoveListener(miss, "pointerdown", miss._preDown);
+  safeRemoveListener(window, "pointermove", miss._preMove);
+  safeRemoveListener(window, "pointerup", miss._preUp);
+
+  safeRemoveListener(miss, "pointerdown", miss._downHandler);
+  safeRemoveListener(window, "pointermove", miss._moveHandler);
+  safeRemoveListener(window, "pointerup", miss._upHandler);
+
+  if (miss) miss.classList.remove("dragging");
+}
+
+function resumeInteractionAfterModal() {
+  // This function intentionally left minimal: caller should decide whether to
+  // re-enable prestart or evaluation mode depending on game state.
+  // Typically we call enablePrestartMode() after modal confirmation.
 }
 
 /* ---------------------------
