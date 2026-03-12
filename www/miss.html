@@ -8,7 +8,7 @@
 </head>
 <body>
 
-<div id="game" data-top-gap="100" data-bottom-gap="100">
+<div id="game">
   <canvas id="gameCanvas"></canvas>
   <img id="miss" src="resources/miss.jpg" alt="Miss">
   <div id="overlay"></div>
@@ -19,47 +19,6 @@
     <div id="roundInfo">Runde: <span id="roundNum">1</span></div>
   </div>
 </div>
-
-<!-- Minimales Verhalten-Script: wendet top/bottom gaps an und bietet Overlay-API.
-     Es enthält keine Styles — Styling ist in css/miss.css. -->
-<script>
-  (function() {
-    const game = document.getElementById('game');
-    const overlay = document.getElementById('overlay');
-
-    function applyGaps() {
-      if (!game) return;
-      const topGap = Number(game.getAttribute('data-top-gap') || 100);
-      const bottomGap = Number(game.getAttribute('data-bottom-gap') || 100);
-      const avail = Math.max(0, window.innerHeight - topGap - bottomGap);
-      game.style.top = topGap + 'px';
-      game.style.height = avail + 'px';
-      game.style.left = '0';
-      game.style.right = '0';
-      game.style.position = 'absolute';
-    }
-
-    // Overlay standardmäßig nicht klickbar, UI bleibt erreichbar
-    if (overlay) {
-      overlay.style.pointerEvents = 'none';
-      overlay.style.zIndex = '5';
-      overlay.style.position = 'absolute';
-      overlay.style.top = '0';
-      overlay.style.left = '0';
-      overlay.style.right = '0';
-      overlay.style.height = '100%';
-    }
-
-    // API: externe Scripts (z.B. miss.js) können overlay aktivieren/deaktivieren
-    window.__gameOverlayEnable = function(enable) {
-      if (!overlay) return;
-      overlay.style.pointerEvents = enable ? 'auto' : 'none';
-    };
-
-    applyGaps();
-    window.addEventListener('resize', applyGaps);
-  })();
-</script>
 
 <script src="js/miss.js"></script>
 </body>
