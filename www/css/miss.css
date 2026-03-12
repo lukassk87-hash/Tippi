@@ -12,7 +12,7 @@ body {
 /* Spielbereich 200px Abstand oben und unten */
 #game {
   position: relative;
-  width: 80%;
+  width: 100%;
   height: calc(100vh - 400px);
   box-sizing: border-box;
 }
@@ -21,8 +21,8 @@ body {
   position: central;
   top: 0;
   left: 0;
-  width: 80%;
-  height: 80%;
+  width: 100%;
+  height: 100%;
 }
 
 #miss {
