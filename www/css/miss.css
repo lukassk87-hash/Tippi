@@ -1,47 +1,74 @@
-/* css/miss.css */
-body {
+/* =========================
+   css/miss.css - Überarbeitet
+   - Entfernt großes Body-Padding
+   - #game nutzt volle Viewport-Höhe
+   - Korrigierte Canvas-Position
+   - Z-Index-Korrekturen für miss und overlay
+   - Kleine UI-Verbesserungen
+   ========================= */
+
+/* Grundlayout */
+html, body {
+  height: 100%;
   margin: 0;
-  padding-top: 150px;
-  padding-bottom: 150px;
+  padding: 0;
   background: #111;
   overflow: hidden;
-  font-family: sans-serif;
-  color: white;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: #fff;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Spielbereich 200px Abstand oben und unten */
+/* Spielcontainer füllt Viewport (bei Bedarf Header/Footer separat behandeln) */
 #game {
   position: relative;
   width: 100%;
-  height: calc(100vh - 400px);
+  height: 100vh;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
+/* Canvas: absolut, deckt den gesamten Spielbereich ab */
 #gameCanvas {
-  position: central;
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
+  display: block;
+  background: transparent;
+  z-index: 10;
 }
 
+/* Miss (das draggable Bild) */
 #miss {
   position: absolute;
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  /* pointer-events must be enabled so the element can be grabbed */
-  pointer-events: auto;
-  touch-action: none; /* prevent default touch gestures while dragging */
+  pointer-events: auto;      /* Element muss pointer-events haben, damit es gegriffen werden kann */
+  touch-action: none;        /* verhindert native Touch-Gesten beim Draggen */
   cursor: grab;
   user-select: none;
   -webkit-user-drag: none;
+  transform: translate3d(0,0,0); /* GPU-Boost für flüssigere Positionierung */
+  z-index: 20;               /* über dem Canvas */
+  will-change: left, top;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+  transition: box-shadow 120ms ease;
+  object-fit: cover;
+  background-color: transparent;
 }
 
+/* Visuelles Feedback beim Greifen */
 #miss.dragging {
   cursor: grabbing;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.7);
+  transition: none;
 }
 
+/* Overlay für Flash-Effekte (grün/rot) */
 #overlay {
   position: absolute;
   top: 0;
@@ -49,24 +76,87 @@ body {
   width: 100%;
   height: 100%;
   pointer-events: none;
+  z-index: 30; /* über allem, damit Flash sichtbar ist */
+  mix-blend-mode: normal;
 }
 
+/* UI-Container (Buttons, Rundenzahl) */
 #ui {
   position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 20;
+  top: 12px;
+  left: 12px;
+  z-index: 40;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  pointer-events: auto;
 }
 
-#startBtn {
-  padding: 10px 20px;
-  font-size: 18px;
+/* Start- und Menü-Buttons */
+#startBtn, #mainMenuBtn {
+  padding: 8px 14px;
+  font-size: 16px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #2b2b2b, #1f1f1f);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+#startBtn:active, #mainMenuBtn:active { transform: translateY(1px); }
+
+/* Rundenzahl */
+#roundInfo {
+  font-size: 16px;
+  padding: 6px 10px;
+  background: rgba(0,0,0,0.45);
+  border-radius: 8px;
 }
 
+/* Lives-Display (falls per JS erzeugt) */
+#livesDisplay {
+  position: fixed;
+  left: 12px;
+  bottom: 12px;
+  z-index: 9999;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  font-family: system-ui, sans-serif;
+  font-size: 14px;
+  pointer-events: none;
+}
+
+/* Flash-Klassen (Overlay) */
 .greenFlash {
-  background: rgba(0,255,0,0.3);
+  background: rgba(0, 255, 120, 0.18);
+  animation: flashFade 300ms ease-out;
+}
+.redFlash {
+  background: rgba(255, 60, 60, 0.18);
+  animation: flashFade 300ms ease-out;
+}
+@keyframes flashFade {
+  from { opacity: 1; }
+  to   { opacity: 0; }
 }
 
-.redFlash {
-  background: rgba(255,0,0,0.3);
+/* Responsive Anpassungen */
+@media (max-width: 600px) {
+  #miss { width: 64px; height: 64px; }
+  #startBtn, #mainMenuBtn { font-size: 14px; padding: 8px 12px; }
+  #roundInfo { font-size: 14px; padding: 6px 8px; }
+}
+
+/* Debug-Hilfen (nur aktivieren beim Entwickeln) */
+.debug-outline #game { outline: 1px dashed rgba(255,255,255,0.06); }
+.debug-outline #gameCanvas { outline: 1px dashed rgba(255,0,0,0.06); }
+.debug-outline #miss { outline: 1px dashed rgba(0,255,0,0.12); }
+
+/* Accessibility: Fokus-Styling für Tastaturbedienung */
+#startBtn:focus, #mainMenuBtn:focus {
+  outline: 2px solid rgba(255,255,255,0.12);
+  outline-offset: 2px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.6);
 }
