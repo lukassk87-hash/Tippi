@@ -1,6 +1,3 @@
-// pack.js
-// Spiel: "Ich tippe meinen Päcki" - komplette Datei mit Container-Limitierung (oben/unten 100px)
-
 document.addEventListener("DOMContentLoaded", () => {
 
   const PARTS = {
@@ -43,12 +40,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const BETWEEN_TERMS_MS = 200;  // Pause zwischen einzelnen Begriffen
 
   function setMessage(txt) {
-    if (packMessage) packMessage.textContent = txt;
+    packMessage.textContent = txt;
   }
 
   function updateUI() {
-    if (roundNumEl) roundNumEl.textContent = round;
-    if (mistakesEl) mistakesEl.textContent = mistakes;
+    roundNumEl.textContent = round;
+    mistakesEl.textContent = mistakes;
   }
 
   function randPart() {
@@ -79,7 +76,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function flashImage(color = "green", duration = FLASH_DURATION_MS) {
     try {
-      if (!imageWrap) return;
       const cls = color === "green" ? "flash-green" : "flash-red";
       if (flashState.timerId) {
         clearTimeout(flashState.timerId);
@@ -101,19 +97,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /* Term Overlay: zeigt den neuen Begriff oder die komplette Sequenz nacheinander */
   async function showNewTerm(partOrSequence) {
+    // termOverlay wird für jeden Begriff einzeln verwendet; keine neuen HTML-Elemente dauerhaft hinzufügen
     try {
-      if (!termOverlay) {
-        // fallback: show in packMessage
-        if (Array.isArray(partOrSequence)) {
-          setMessage(`Sequenz: ${partOrSequence.join(" → ")}`);
-          await wait(TERM_DISPLAY_MS);
-        } else {
-          setMessage(partOrSequence);
-          await wait(TERM_DISPLAY_MS);
-        }
-        return;
-      }
-
       // Wenn ein Array übergeben wird: Begriffe nacheinander einzeln anzeigen
       if (Array.isArray(partOrSequence)) {
         for (let i = 0; i < partOrSequence.length; i++) {
@@ -147,6 +132,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     } catch (e) {
       console.error("[pack.js] showNewTerm error:", e);
+      // Fallback: kurz Text im packMessage anzeigen, falls Overlay fehlschlägt
       if (Array.isArray(partOrSequence)) {
         setMessage(`Sequenz: ${partOrSequence.join(" → ")}`);
         await wait(TERM_DISPLAY_MS);
@@ -155,10 +141,9 @@ document.addEventListener("DOMContentLoaded", () => {
         await wait(TERM_DISPLAY_MS);
       }
     } finally {
-      if (termOverlay) {
-        termOverlay.innerHTML = "";
-        termOverlay.classList.remove("show");
-      }
+      // Overlay leeren, damit keine Reste bleiben
+      termOverlay.innerHTML = "";
+      termOverlay.classList.remove("show");
     }
   }
 
@@ -184,6 +169,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Hinweis anzeigen und die komplette Sequenz nacheinander im vorhandenen Overlay darstellen
     setMessage(`Teil ${sequence.length}: Merke dir die Begriffe`);
+    // zeigt jetzt jeden Begriff einzeln nacheinander (z.B. Runde 2: "Zunge" [ausblenden] "Auge")
     await showNewTerm(sequence);
 
     setMessage("Jetzt tippen in der richtigen Reihenfolge.");
@@ -195,7 +181,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function gameOver() {
     acceptingInput = false;
     setMessage("Spiel vorbei.");
-    if (finalScore) finalScore.textContent = `Du hast Runde ${round} erreicht.`;
+    finalScore.textContent = `Du hast Runde ${round} erreicht.`;
     gameOverBoxShow();
 
     // Highscore prüfen und ggf. speichern
@@ -215,18 +201,18 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function gameOverBoxShow() {
-    if (gameOverBox) gameOverBox.style.display = "block";
+    gameOverBox.style.display = "block";
   }
 
   function gameOverBoxHide() {
-    if (gameOverBox) gameOverBox.style.display = "none";
+    gameOverBox.style.display = "none";
   }
 
   function handleTapIndex(tappedIndex) {
     if (!acceptingInput) return;
 
     const expectedPart = sequence[inputIndex];
-    const allowed = PARTS[expectedPart] || [];
+    const allowed = PARTS[expectedPart];
 
     if (allowed.includes(tappedIndex)) {
       flashImage("green", FLASH_DURATION_MS);
@@ -255,83 +241,38 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  /* --- Container-Limitierung: oben und unten jeweils 100px freihalten --- */
-  function limitImageWrapToViewport() {
-    if (!imageWrap) return;
-    const topGap = 100;   // px oben
-    const bottomGap = 100; // px unten
-    const availableHeight = Math.max(0, window.innerHeight - topGap - bottomGap);
-
-    // Stelle sicher, dass imageWrap positioniert ist, damit top/height wirken.
-    // Falls CSS bereits positioniert, diese Zeilen überschreiben nur falls nötig.
-    imageWrap.style.position = imageWrap.style.position || "absolute";
-    imageWrap.style.top = topGap + "px";
-    imageWrap.style.left = "0";
-    imageWrap.style.right = "0";
-    imageWrap.style.height = availableHeight + "px";
-    imageWrap.style.maxHeight = availableHeight + "px";
-    imageWrap.style.boxSizing = "border-box";
-    imageWrap.style.overflow = "hidden";
-
-    // packOverlay sollte die gleiche Größe/Position haben, damit coordsToIndex korrekt bleibt
-    if (packOverlay) {
-      packOverlay.style.position = packOverlay.style.position || "absolute";
-      packOverlay.style.top = topGap + "px";
-      packOverlay.style.left = "0";
-      packOverlay.style.right = "0";
-      packOverlay.style.height = availableHeight + "px";
-      packOverlay.style.pointerEvents = "auto";
-    }
-
-    // gridRect neu berechnen beim nächsten Zugriff
-    gridRect = null;
-  }
-
   /* Event Listeners */
-  if (packOverlay) {
-    packOverlay.addEventListener("pointerdown", (ev) => {
-      ev.preventDefault();
-      if (!acceptingInput) return;
-      gridRect = imageWrap.getBoundingClientRect();
-      const idx = coordsToIndex(ev.clientX, ev.clientY);
-      handleTapIndex(idx);
-    });
-  }
+  packOverlay.addEventListener("pointerdown", (ev) => {
+    ev.preventDefault();
+    if (!acceptingInput) return;
+    gridRect = imageWrap.getBoundingClientRect();
+    const idx = coordsToIndex(ev.clientX, ev.clientY);
+    handleTapIndex(idx);
+  });
 
-  if (startBtn) {
-    startBtn.addEventListener("click", async () => {
-      sequence = [];
-      mistakes = 0;
-      round = 0;
-      updateUI();
-      setMessage("Starte Spiel...");
-      await wait(220);
-      startRound();
-    });
-  }
+  startBtn.addEventListener("click", async () => {
+    sequence = [];
+    mistakes = 0;
+    round = 0;
+    updateUI();
+    setMessage("Starte Spiel...");
+    await wait(220);
+    startRound();
+  });
 
-  if (backBtn) {
-    backBtn.addEventListener("click", () => {
-      location.href = "index.html";
-    });
-  }
+  backBtn.addEventListener("click", () => {
+    location.href = "index.html";
+  });
 
-  if (packRestart) {
-    packRestart.addEventListener("click", () => {
-      gameOverBoxHide();
-      startNewGame();
-    });
-  }
+  packRestart.addEventListener("click", () => {
+    gameOverBoxHide();
+    startNewGame();
+  });
 
   /* Init */
   function init() {
     startNewGame();
-    limitImageWrapToViewport();
-    // resize handler: begrenze Container und aktualisiere gridRect
-    window.addEventListener("resize", () => {
-      limitImageWrapToViewport();
-      gridRect = imageWrap ? imageWrap.getBoundingClientRect() : null;
-    });
+    window.addEventListener("resize", () => { gridRect = imageWrap.getBoundingClientRect(); });
   }
 
   init();
