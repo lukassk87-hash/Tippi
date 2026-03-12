@@ -1,94 +1,115 @@
-// highscore.js
-// Per-game limits: Miss -> top 3, andere Spiele größere Limits
-const GAME_LIMITS = {
-  "Miss": 3,
-  "Tippi": 50,
-  "Ich tippe meinen Päcki": 50
-};
+/* highscore.js
+   Erweiterung: Highscore-Einträge enthalten jetzt {name, score, game}
+   Funktionen:
+   - loadHighscores(), saveHighscores()
+   - addHighscore(name, score, game = "Tippi")
+   - checkForHighscore(score, game = "Tippi")
+   - renderHighscoreList() zeigt separate Abschnitte für beide Spiele
+   - showHighscores() aktualisiert highscoreBox (falls vorhanden) und Liste
+*/
 
 function loadHighscores() {
-  try {
-    const data = localStorage.getItem("highscores");
-    return data ? JSON.parse(data) : [];
-  } catch (e) {
-    console.warn("Highscore load failed, resetting:", e);
-    localStorage.removeItem("highscores");
-    return [];
-  }
+  const data = localStorage.getItem("highscores");
+  return data ? JSON.parse(data) : [];
 }
 
 function saveHighscores(list) {
   localStorage.setItem("highscores", JSON.stringify(list));
 }
 
-// Gruppiert, sortiert und kürzt jede Spielgruppe auf das jeweilige Limit.
-function enforcePerGameLimits(list) {
-  const groups = {};
-  for (const e of list) {
-    const game = String(e.game || ""); // defensive
-    if (!groups[game]) groups[game] = [];
-    groups[game].push({ name: String(e.name || ""), score: Number(e.score || 0), game });
-  }
-
-  const result = [];
-  for (const game in groups) {
-    groups[game].sort((a, b) => b.score - a.score);
-    const limit = GAME_LIMITS.hasOwnProperty(game) ? GAME_LIMITS[game] : 50;
-    const kept = groups[game].slice(0, limit);
-    result.push(...kept);
-  }
-
-  result.sort((a, b) => b.score - a.score);
-  return result;
-}
-
-// Fügt neuen Highscore hinzu und speichert danach die gekürzte Liste
+// name: string, score: number, game: string (optional)
 function addHighscore(name, score, game = "Tippi") {
-  // einfache Validierung
-  const nm = String(name || "Spieler");
-  const sc = Number(score || 0);
-  const gm = String(game || "Tippi");
-
-  if (!Number.isFinite(sc)) {
-    console.warn("Ungültiger Score:", score);
-    return;
-  }
-
-  const list = loadHighscores();
-  list.push({ name: nm, score: sc, game: gm });
-
-  const trimmed = enforcePerGameLimits(list);
-
-  // optional globales Limit
-  const globalLimit = 200;
-  const finalList = trimmed.slice(0, globalLimit);
-
-  saveHighscores(finalList);
-  if (typeof showHighscores === "function") showHighscores();
-  if (typeof renderHighscoreList === "function") renderHighscoreList();
-}
-
-// Prüft, ob ein Score in die Top-N des Spiels kommt
-function checkForHighscore(score, game = "Tippi") {
-  const sc = Number(score || 0);
-  const list = loadHighscores().filter(e => e.game === game);
+  let list = loadHighscores();
+  list.push({ name: String(name), score: Number(score), game: String(game) });
+  // sort global by score desc
   list.sort((a, b) => b.score - a.score);
-  const limit = GAME_LIMITS.hasOwnProperty(game) ? GAME_LIMITS[game] : 3;
-  if (list.length < limit) return true;
-  return sc > list[limit - 1].score;
+  // keep reasonable length (e.g., top 50 overall)
+  list = list.slice(0, 50);
+  saveHighscores(list);
+  showHighscores();
+  renderHighscoreList();
 }
 
-// Render-Funktionen (Beispielimplementierung, anpassbar)
+// check if score is a highscore for given game (top 3 for that game)
+function checkForHighscore(score, game = "Tippi") {
+  const list = loadHighscores().filter(e => e.game === game);
+  // sort descending by score to reliably get top positions
+  list.sort((a, b) => b.score - a.score);
+  if (list.length < 3) return true;
+  // compare with the 3rd best (index 2)
+  return score > list[2].score;
+}
+
+// render the highscore list into #highscoreList (used on highscore.html)
 function renderHighscoreList() {
   const list = loadHighscores();
   const box = document.getElementById("highscoreList");
   if (!box) return;
 
+  // group by game
   const groups = {};
   for (const e of list) {
     if (!groups[e.game]) groups[e.game] = [];
     groups[e.game].push(e);
   }
 
-  const gamesToShow = ["Tippi", "Ich tippe meinen Päcki", "Miss"];
+  // ensure both games appear even if empty
+  const gamesToShow = ["Tippi", "Ich tippe meinen Päcki"];
   let html = "";
+
+  for (const g of gamesToShow) {
+    const arr = groups[g] ? groups[g].slice() : [];
+    // sort each group's entries by score desc
+    arr.sort((a, b) => b.score - a.score);
+    const top = arr.slice(0, 3);
+    html += <div class="hs-game"><b>${escapeHtml(g)}</b><br>;
+    if (top.length === 0) {
+      html += "Keine Highscores vorhanden<br><br>";
+    } else {
+      html += top.map((e, i) => ${i+1}. ${escapeHtml(e.name)}: ${e.score}).join("<br>") + "<br><br>";
+    }
+    html += </div>;
+  }
+
+  box.innerHTML = html;
+}
+
+// showHighscores updates the in-game highscore box (if present) and the highscore page list
+function showHighscores() {
+  const list = loadHighscores();
+
+  const boxGame = document.getElementById("highscoreBox");
+  if (boxGame) {
+    // show compact summary: best per game
+    const games = ["Tippi", "Ich tippe meinen Päcki"];
+    let html = "";
+    for (const g of games) {
+      const arr = list.filter(e => e.game === g).sort((a,b)=>b.score-a.score).slice(0,3);
+      html += <div><b>${escapeHtml(g)}</b>: ;
+      if (arr.length === 0) html += "—";
+      else html += arr.map((e,i)=>${i+1}. ${escapeHtml(e.name)} (${e.score})).join("; ");
+      html += </div>;
+    }
+    boxGame.innerHTML = html;
+  }
+
+  // also update highscore page list if present
+  renderHighscoreList();
+}
+
+function escapeHtml(str) {
+  if (typeof str !== "string") return "";
+  return str.replace(/[&<>"']/g, function(m) {
+    return {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[m];
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  renderHighscoreList();
+});
