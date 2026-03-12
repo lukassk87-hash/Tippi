@@ -37,6 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
   /* Flash- / Term-Konfiguration */
   const FLASH_DURATION_MS = 200; // kurzer Flash
   const TERM_DISPLAY_MS = 1000;  // Begriff-Anzeige 1000 ms
+  const BETWEEN_TERMS_MS = 200;  // Pause zwischen einzelnen Begriffen
 
   function setMessage(txt) {
     packMessage.textContent = txt;
@@ -94,18 +95,56 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  /* Term Overlay: zeigt nur den neuen Begriff TERM_DISPLAY_MS */
-  async function showNewTerm(partName) {
-    termOverlay.innerHTML = "";
-    const box = document.createElement("div");
-    box.className = "termBox";
-    box.textContent = partName;
-    termOverlay.appendChild(box);
+  /* Term Overlay: zeigt den neuen Begriff oder die komplette Sequenz nacheinander */
+  async function showNewTerm(partOrSequence) {
+    // termOverlay wird für jeden Begriff einzeln verwendet; keine neuen HTML-Elemente dauerhaft hinzufügen
+    try {
+      // Wenn ein Array übergeben wird: Begriffe nacheinander einzeln anzeigen
+      if (Array.isArray(partOrSequence)) {
+        for (let i = 0; i < partOrSequence.length; i++) {
+          termOverlay.innerHTML = "";
+          const box = document.createElement("div");
+          box.className = "termBox";
+          box.textContent = partOrSequence[i];
+          termOverlay.appendChild(box);
 
-    termOverlay.classList.add("show");
-    await wait(TERM_DISPLAY_MS);
-    termOverlay.classList.remove("show");
-    await wait(120);
+          termOverlay.classList.add("show");
+          await wait(TERM_DISPLAY_MS);
+          termOverlay.classList.remove("show");
+
+          // kurz warten bevor der nächste Begriff erscheint
+          await wait(BETWEEN_TERMS_MS);
+        }
+        // kleine Pause nach der kompletten Sequenz
+        await wait(120);
+      } else {
+        // Einzelnen Begriff anzeigen (Abwärtskompatibel)
+        termOverlay.innerHTML = "";
+        const box = document.createElement("div");
+        box.className = "termBox";
+        box.textContent = partOrSequence;
+        termOverlay.appendChild(box);
+
+        termOverlay.classList.add("show");
+        await wait(TERM_DISPLAY_MS);
+        termOverlay.classList.remove("show");
+        await wait(120);
+      }
+    } catch (e) {
+      console.error("[pack.js] showNewTerm error:", e);
+      // Fallback: kurz Text im packMessage anzeigen, falls Overlay fehlschlägt
+      if (Array.isArray(partOrSequence)) {
+        setMessage(`Sequenz: ${partOrSequence.join(" → ")}`);
+        await wait(TERM_DISPLAY_MS);
+      } else {
+        setMessage(partOrSequence);
+        await wait(TERM_DISPLAY_MS);
+      }
+    } finally {
+      // Overlay leeren, damit keine Reste bleiben
+      termOverlay.innerHTML = "";
+      termOverlay.classList.remove("show");
+    }
   }
 
   function wait(ms) {
@@ -128,9 +167,10 @@ document.addEventListener("DOMContentLoaded", () => {
     round = sequence.length;
     updateUI();
 
-    const newPart = sequence[sequence.length - 1];
-    setMessage(`Teil ${sequence.length}: Merke dir den Begriff`);
-    await showNewTerm(newPart);
+    // Hinweis anzeigen und die komplette Sequenz nacheinander im vorhandenen Overlay darstellen
+    setMessage(`Teil ${sequence.length}: Merke dir die Begriffe`);
+    // zeigt jetzt jeden Begriff einzeln nacheinander (z.B. Runde 2: "Zunge" [ausblenden] "Auge")
+    await showNewTerm(sequence);
 
     setMessage("Jetzt tippen in der richtigen Reihenfolge.");
     acceptingInput = true;
