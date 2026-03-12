@@ -1,16 +1,20 @@
 /* css/miss.css */
 body {
   margin: 0;
+  padding-top: 150px;
+  padding-bottom: 150px;
   background: #111;
   overflow: hidden;
   font-family: sans-serif;
   color: white;
 }
 
+/* Spielbereich 200px Abstand oben und unten */
 #game {
   position: relative;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: calc(100vh - 400px);
+  box-sizing: border-box;
 }
 
 #gameCanvas {
@@ -65,3 +69,4 @@ body {
 
 .redFlash {
   background: rgba(255,0,0,0.3);
+}
