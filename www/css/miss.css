@@ -1,137 +1,72 @@
 /* css/miss.css */
-
-/* Basis */
-html, body {
-  height: 100%;
+body {
   margin: 0;
+  padding-top: 150px;
+  padding-bottom: 150px;
   background: #111;
+  overflow: hidden;
   font-family: sans-serif;
   color: white;
 }
 
-/* Spiel-Container: wird per JS positioniert (top/height) */
+/* Spielbereich 200px Abstand oben und unten */
 #game {
-  box-sizing: border-box;
-  overflow: hidden;
+  position: relative;
   width: 100%;
-  /* top und height werden per JS gesetzt, damit data-top-gap / data-bottom-gap wirken */
+  height: calc(100vh - 400px);
+  box-sizing: border-box;
 }
 
-/* Canvas füllt den Spielbereich */
 #gameCanvas {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  display: block;
 }
 
-/* Bild: skaliert sauber innerhalb des Containers */
 #miss {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  /* pointer-events must be enabled so the element can be grabbed */
+  pointer-events: auto;
+  touch-action: none; /* prevent default touch gestures while dragging */
+  cursor: grab;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+#miss.dragging {
+  cursor: grabbing;
+}
+
+#overlay {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  display: block;
-  pointer-events: none; /* Bild selbst soll keine Pointer-Events blockieren */
-  user-select: none;
-  -webkit-user-drag: none;
+  pointer-events: none;
 }
 
-/* Overlay: fängt Pointer-Events nur wenn aktiviert (JS setzt pointer-events) */
-#overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 100%;
-  pointer-events: none; /* default: keine Events, wird per JS aktiviert */
-  z-index: 5;
-}
-
-/* UI: immer oben, über Overlay */
 #ui {
   position: absolute;
   top: 10px;
   left: 10px;
   z-index: 20;
-  display: flex;
-  gap: 8px;
-  align-items: center;
 }
 
-/* Buttons */
-#startBtn, #mainMenuBtn {
-  padding: 8px 12px;
-  font-size: 16px;
-  cursor: pointer;
-  background: #222;
-  color: #fff;
-  border: 1px solid #444;
-  border-radius: 4px;
-}
-#startBtn:hover, #mainMenuBtn:hover {
-  background: #333;
+#startBtn {
+  padding: 10px 20px;
+  font-size: 18px;
 }
 
-/* Rundenzahl / Info */
-#roundInfo {
-  margin-left: 8px;
-  font-size: 16px;
+.greenFlash {
+  background: rgba(0,255,0,0.3);
 }
 
-/* Flash-Effekte für imageWrap-ähnliche Container (falls benötigt) */
-.flash-green {
-  box-shadow: inset 0 0 0 9999px rgba(0,255,0,0.12);
-  transition: box-shadow 0.15s ease;
-}
-.flash-red {
-  box-shadow: inset 0 0 0 9999px rgba(255,0,0,0.12);
-  transition: box-shadow 0.15s ease;
-}
-
-/* Term Overlay (falls dein Spiel ein Overlay-Element verwendet) */
-#termOverlay {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 30;
-  pointer-events: none;
-  display: none;
-}
-#termOverlay.show {
-  display: block;
-}
-.termBox {
-  background: rgba(0,0,0,0.75);
-  color: #fff;
-  padding: 12px 18px;
-  border-radius: 8px;
-  font-size: 20px;
-  text-align: center;
-}
-
-/* Game over box (falls vorhanden) */
-#packGameOver, #gameOverBox {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 40;
-  background: rgba(0,0,0,0.85);
-  padding: 18px;
-  border-radius: 8px;
-  display: none;
-  color: #fff;
-}
-
-/* kleine responsive Anpassung */
-@media (max-width: 480px) {
-  #ui { top: 6px; left: 6px; gap: 6px; }
-  #startBtn, #mainMenuBtn { padding: 6px 10px; font-size: 14px; }
-  .termBox { font-size: 16px; padding: 10px 14px; }
+.redFlash {
+  background: rgba(255,0,0,0.3);
 }
