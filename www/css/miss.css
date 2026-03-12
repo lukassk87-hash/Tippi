@@ -1,10 +1,8 @@
 /* =========================
-   css/miss.css - Überarbeitet
-   - Entfernt großes Body-Padding
-   - #game nutzt volle Viewport-Höhe
-   - Korrigierte Canvas-Position
-   - Z-Index-Korrekturen für miss und overlay
-   - Kleine UI-Verbesserungen
+   css/miss.css - Final
+   - Buttons weiter unten (unten zentriert)
+   - Infotexte mit mehr Abstand zum Rand
+   - Korrigierte Canvas-Position, Z-Index, Performance-Hints
    ========================= */
 
 /* Grundlayout */
@@ -47,13 +45,13 @@ html, body {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  pointer-events: auto;      /* Element muss pointer-events haben, damit es gegriffen werden kann */
-  touch-action: none;        /* verhindert native Touch-Gesten beim Draggen */
+  pointer-events: auto;
+  touch-action: none;
   cursor: grab;
   user-select: none;
   -webkit-user-drag: none;
-  transform: translate3d(0,0,0); /* GPU-Boost für flüssigere Positionierung */
-  z-index: 20;               /* über dem Canvas */
+  transform: translate3d(0,0,0);
+  z-index: 20;
   will-change: left, top;
   box-shadow: 0 6px 18px rgba(0,0,0,0.6);
   transition: box-shadow 120ms ease;
@@ -76,20 +74,25 @@ html, body {
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 30; /* über allem, damit Flash sichtbar ist */
+  z-index: 30;
   mix-blend-mode: normal;
 }
 
-/* UI-Container (Buttons, Rundenzahl) */
+/* UI-Container (Buttons, Rundenzahl) - weiter unten, zentriert */
 #ui {
   position: absolute;
-  top: 12px;
-  left: 12px;
+  bottom: 64px;        /* Buttons weiter nach unten */
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 40;
   display: flex;
-  gap: 8px;
+  gap: 12px;           /* mehr Abstand zwischen Buttons */
   align-items: center;
   pointer-events: auto;
+  background: rgba(0,0,0,0.18);
+  padding: 12px 18px;  /* mehr Innenabstand */
+  border-radius: 14px;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.45);
 }
 
 /* Start- und Menü-Buttons */
@@ -105,26 +108,27 @@ html, body {
 }
 #startBtn:active, #mainMenuBtn:active { transform: translateY(1px); }
 
-/* Rundenzahl */
+/* Rundenzahl-Box (mehr Abstand innen und vom Rand) */
 #roundInfo {
   font-size: 16px;
-  padding: 6px 10px;
-  background: rgba(0,0,0,0.45);
-  border-radius: 8px;
+  padding: 12px 16px;          /* mehr Abstand innen */
+  background: rgba(0,0,0,0.55);
+  border-radius: 10px;
+  margin-left: 6px;            /* Abstand zu den Buttons */
 }
 
-/* Lives-Display (falls per JS erzeugt) */
+/* Lives-Display (falls per JS erzeugt) - mehr Abstand vom Rand */
 #livesDisplay {
   position: fixed;
-  left: 12px;
-  bottom: 12px;
+  left: 16px;
+  bottom: 28px;                /* weiter vom unteren Rand weg */
   z-index: 9999;
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: rgba(0,0,0,0.6);
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(0,0,0,0.65);
   color: #fff;
   font-family: system-ui, sans-serif;
-  font-size: 14px;
+  font-size: 15px;
   pointer-events: none;
 }
 
@@ -146,7 +150,9 @@ html, body {
 @media (max-width: 600px) {
   #miss { width: 64px; height: 64px; }
   #startBtn, #mainMenuBtn { font-size: 14px; padding: 8px 12px; }
-  #roundInfo { font-size: 14px; padding: 6px 8px; }
+  #roundInfo { font-size: 14px; padding: 8px 10px; }
+  #ui { bottom: 48px; padding: 10px 12px; gap: 8px; }
+  #livesDisplay { bottom: 20px; left: 12px; padding: 8px 10px; font-size: 14px; }
 }
 
 /* Debug-Hilfen (nur aktivieren beim Entwickeln) */
