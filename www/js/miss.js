@@ -1,9 +1,13 @@
-
 /* =========================
-   Spiel-Logik (miss)
+   miss.js (komplett, final)
+   - Buttons weiter unten / Startpunkt weiter unten / Zielpunkt weiter oben
+   - START_Y_FACTOR = 0.18, TARGET_Y_FACTOR = 0.78, PRESTART_THRESHOLD_FACTOR = 0.60
+   - Robuste DOM-Guards, Debounced resize, dynamische Abweichung
    ========================= */
 
-// Canvas / DOM Elemente
+'use strict';
+
+// DOM Elemente (können beim Laden noch null sein)
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas ? canvas.getContext("2d") : null;
 const miss = document.getElementById("miss");
@@ -21,7 +25,7 @@ function ensureLivesUI() {
     el.style.position = "fixed";
     el.style.left = "12px";
     el.style.bottom = "12px";
-    el.style.zIndex = 9998;
+    el.style.zIndex = 9999;
     el.style.padding = "8px 12px";
     el.style.borderRadius = "8px";
     el.style.background = "rgba(0,0,0,0.6)";
@@ -34,26 +38,46 @@ function ensureLivesUI() {
 }
 ensureLivesUI();
 
-// Fallbacks, falls Elemente fehlen
-if (!canvas || !miss || !overlay || !startBtn || !roundNumEl) {
-  console.warn("Miss game: some DOM elements are missing. Ensure gameCanvas, miss, overlay, startBtn, roundNum exist.");
+// Defensive helper: safe add/remove listeners
+function safeAddListener(el, evt, handler, opts) {
+  if (!el || typeof el.addEventListener !== 'function') return;
+  el.addEventListener(evt, handler, opts);
+}
+function safeRemoveListener(el, evt, handler, opts) {
+  if (!el || typeof el.removeEventListener !== 'function') return;
+  try { el.removeEventListener(evt, handler, opts); } catch (e) {}
 }
 
-// Spielzustand
+// Safe getBoundingClientRect
+function safeGetRect(el) {
+  if (!el || typeof el.getBoundingClientRect !== 'function') return null;
+  try { return el.getBoundingClientRect(); } catch (e) { return null; }
+}
+
+/* ---------------------------
+   Spielzustand / Einstellungen
+   --------------------------- */
+
 let width = 0;
 let height = 0;
 let path = [];
 let segsInfo = null;
 let round = 1;
 
-// Einstellungen
 const EDGE_MARGIN = 40;
 let missSize = { w: 80, h: 80 };
 let topQuarterY = 0;
 let debug = false;
 
-// Wegerkennung
-const MAX_DEVIATION_PX = 50;
+// Positioning factors requested
+const START_Y_FACTOR = 0.18;           // Startpunkt bei 18% der Höhe (weiter unten)
+const TARGET_Y_FACTOR = 0.78;          // Zielpunkt bei 78% der Höhe (weiter oben relative to bottom)
+const PRESTART_THRESHOLD_FACTOR = 0.60; // Prestart-Schwelle bei 60% der Höhe
+
+// Wegerkennung: dynamisch berechnet
+function getMaxDeviationPx() {
+  return Math.max(24, Math.round(Math.min(missSize.w, missSize.h) * 0.6));
+}
 
 let prestartActive = false;
 let playing = false;
@@ -64,21 +88,39 @@ let lastAlong = 0;
 const PRESTART_EXIT_BUFFER = 8;
 const END_THRESHOLD = 6;
 
-// Resize handler
+/* ---------------------------
+   Resize handler mit Debounce
+   --------------------------- */
+
+let resizeTimer = null;
 function resizeGame() {
   if (!canvas) return;
-  width = canvas.width = window.innerWidth;
-  height = canvas.height = window.innerHeight;
-  topQuarterY = Math.round(height * 0.25);
+  const w = Math.floor(window.innerWidth);
+  const h = Math.floor(window.innerHeight);
 
-  const rect = miss.getBoundingClientRect();
+  // Canvas-Buffer und CSS-Größe konsistent setzen
+  canvas.width = w;
+  canvas.height = h;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+
+  width = w;
+  height = h;
+
+  // Prestart-Schwelle neu berechnen (wird verwendet, um zu prüfen, ob der Spieler "nach unten" gezogen hat)
+  topQuarterY = Math.round(height * PRESTART_THRESHOLD_FACTOR);
+
+  const rect = safeGetRect(miss);
   if (rect && rect.width) {
     missSize.w = rect.width;
     missSize.h = rect.height;
   }
   draw();
 }
-window.addEventListener("resize", resizeGame);
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(resizeGame, 120);
+});
 resizeGame();
 
 /* ---------------------------
@@ -115,12 +157,14 @@ function getSplinePoints(ctrlPoints, samplesPerSeg = 12) {
 }
 
 /* ---------------------------
-   Pfad-Generierung (breiter)
+   Pfad-Generierung (angepasst)
    --------------------------- */
 
 function generatePathForRound(r) {
-  const nominalStartY = Math.max(EDGE_MARGIN, Math.round(height / 3));
-  const targetY = Math.max(nominalStartY + 50, Math.round(height * 0.90));
+  // Nominaler Start und Ziel jetzt abhängig von den neuen Faktoren
+  const nominalStartY = Math.max(EDGE_MARGIN, Math.round(height * START_Y_FACTOR));
+  // Ziel höher setzen (kleinerer Anteil = weiter oben), aber mindestens etwas unterhalb Start
+  const targetY = Math.max(nominalStartY + 50, Math.round(height * TARGET_Y_FACTOR));
   const centerX = Math.round(width / 2);
 
   const curves = Math.min(10, Math.max(0, r - 1));
@@ -130,7 +174,7 @@ function generatePathForRound(r) {
   const baseAmp = Math.max(40, Math.round(missSize.w * 2.0));
   const ampFactor = 1.0 + Math.min(2.0, r * 0.12);
 
-  const preferredTop = Math.round(height * 0.04);
+  const preferredTop = Math.round(height * START_Y_FACTOR);
   const startY = Math.max(EDGE_MARGIN, Math.min(nominalStartY, preferredTop));
 
   const ctrl = [];
@@ -161,6 +205,7 @@ function generatePathForRound(r) {
 function computeSegments(points) {
   const segs = [];
   let total = 0;
+  if (!points || points.length < 2) return { segs, total };
   for (let i = 0; i < points.length - 1; i++) {
     const a = points[i], b = points[i + 1];
     const dx = b.x - a.x, dy = b.y - a.y;
@@ -172,8 +217,8 @@ function computeSegments(points) {
 }
 
 function pointAtDistance(si, d) {
+  if (!si || !si.segs || si.segs.length === 0) return { x: 0, y: 0 };
   const { segs, total } = si;
-  if (!segs || segs.length === 0) return { x: 0, y: 0 };
   if (d <= 0) return segs[0].a;
   if (d >= total) return segs[segs.length - 1].b;
   let acc = 0;
@@ -189,9 +234,10 @@ function pointAtDistance(si, d) {
 }
 
 function projectPointOnPath(si, p) {
+  const best = { dist: Infinity, along: 0, point: null };
+  if (!si || !si.segs || si.segs.length === 0) return best;
   const { segs } = si;
   let acc = 0;
-  let best = { dist: Infinity, along: 0, point: null };
   for (let i = 0; i < segs.length; i++) {
     const s = segs[i];
     const ax = s.a.x, ay = s.a.y, bx = s.b.x, by = s.b.y;
@@ -205,14 +251,14 @@ function projectPointOnPath(si, p) {
     const dx = p.x - projX, dy = p.y - projY;
     const d = Math.sqrt(dx * dx + dy * dy);
     const along = acc + s.len * t;
-    if (d < best.dist) best = { dist: d, along, point: { x: projX, y: projY } };
+    if (d < best.dist) best.dist = d, best.along = along, best.point = { x: projX, y: projY };
     acc += s.len;
   }
   return best;
 }
 
 /* ---------------------------
-   Preview Animation (50% speed -> duration doubled)
+   Preview Animation
    --------------------------- */
 
 function animatePreview(points) {
@@ -222,7 +268,7 @@ function animatePreview(points) {
     const total = segsInfo.total;
 
     const base = Math.max(700, Math.min(2200, total * 0.45));
-    const PREVIEW_DURATION_MULTIPLIER = 2.0; // Dauer verdoppeln -> halb so schnell
+    const PREVIEW_DURATION_MULTIPLIER = 2.0;
     const duration = base * PREVIEW_DURATION_MULTIPLIER;
 
     const startTime = performance.now();
@@ -231,8 +277,10 @@ function animatePreview(points) {
       const t = Math.min(1, (now - startTime) / duration);
       const dist = t * total;
       const p = pointAtDistance(segsInfo, dist);
-      miss.style.left = (p.x - missSize.w / 2) + "px";
-      miss.style.top = (p.y - missSize.h / 2) + "px";
+      if (miss) {
+        miss.style.left = (p.x - missSize.w / 2) + "px";
+        miss.style.top = (p.y - missSize.h / 2) + "px";
+      }
       draw();
       if (t < 1) {
         requestAnimationFrame(step);
@@ -244,8 +292,10 @@ function animatePreview(points) {
     }
 
     const startP = points[0];
-    miss.style.left = (startP.x - missSize.w / 2) + "px";
-    miss.style.top = (startP.y - missSize.h / 2) + "px";
+    if (miss) {
+      miss.style.left = (startP.x - missSize.w / 2) + "px";
+      miss.style.top = (startP.y - missSize.h / 2) + "px";
+    }
     requestAnimationFrame(step);
   });
 }
@@ -257,14 +307,20 @@ function animatePreview(points) {
 function draw() {
   if (!ctx) return;
   ctx.clearRect(0, 0, width, height);
-  // Keine Pfadlinien, keine Marker. Canvas bleibt leer.
+  if (debug && path && path.length > 1) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(path[0].x, path[0].y);
+    for (let i = 1; i < path.length; i++) ctx.lineTo(path[i].x, path[i].y);
+    ctx.stroke();
+    ctx.restore();
+  }
 }
 
 /* ---------------------------
    Leben / Verlustbehandlung
-   - Drei Leben; bei Verlust: lives--.
-   - Wenn noch Leben übrig: aktuelle Runde neu starten (Vorschau + Prestart).
-   - Wenn keine Leben mehr: Ende des Spiels -> Highscore-Overlay (mit Namenseingabe falls Highscore), Reset auf Runde 1 und lives zurücksetzen.
    --------------------------- */
 
 function updateLivesUI() {
@@ -274,21 +330,18 @@ function updateLivesUI() {
 
 async function handleLoss() {
   flash("red");
-  // kurz warten, damit Flash sichtbar ist
   await new Promise(res => setTimeout(res, 250));
 
   lives = Math.max(0, lives - 1);
   updateLivesUI();
 
   if (lives > 0) {
-    // Spieler hat noch Leben: restart same round (no highscore)
-    // keep current round number, regenerate path and preview
     path = generatePathForRound(round);
     segsInfo = computeSegments(path);
     currentAlong = 0;
     lastAlong = 0;
     await animatePreview(path);
-    if (path && path.length > 0) {
+    if (path && path.length > 0 && miss) {
       const startP = path[0];
       miss.style.left = (startP.x - missSize.w / 2) + "px";
       miss.style.top = (startP.y - missSize.h / 2) + "px";
@@ -298,26 +351,25 @@ async function handleLoss() {
     return;
   }
 
-  // lives == 0 -> Ende des Spiels
-  // Zeige Highscore-Overlay und erlaub Name-Eingabe falls Highscore
   try {
-    Highscore.recordEndOfGame(round);
+    if (typeof Highscore !== 'undefined' && Highscore && typeof Highscore.recordEndOfGame === 'function') {
+      Highscore.recordEndOfGame(round);
+    }
   } catch (e) {
     console.warn("Highscore.recordEndOfGame failed", e);
   }
 
-  // Reset game state: round -> 1, lives reset
   round = 1;
   lives = 3;
   updateLivesUI();
-  roundNumEl.textContent = round;
+  if (roundNumEl) roundNumEl.textContent = round;
 
   path = generatePathForRound(round);
   segsInfo = computeSegments(path);
   currentAlong = 0;
   lastAlong = 0;
   await animatePreview(path);
-  if (path && path.length > 0) {
+  if (path && path.length > 0 && miss) {
     const startP = path[0];
     miss.style.left = (startP.x - missSize.w / 2) + "px";
     miss.style.top = (startP.y - missSize.h / 2) + "px";
@@ -335,29 +387,31 @@ function enablePrestartMode() {
   playing = false;
   dragging = false;
 
-  if (path && path.length > 0) {
+  if (path && path.length > 0 && miss) {
     const startP = path[0];
     miss.style.left = (startP.x - missSize.w / 2) + "px";
     miss.style.top = (startP.y - missSize.h / 2) + "px";
-  } else {
+  } else if (miss) {
     const sx = Math.round(width / 2);
-    const sy = Math.round(height * 0.04);
+    const sy = Math.round(height * START_Y_FACTOR);
     miss.style.left = (sx - missSize.w / 2) + "px";
     miss.style.top = (sy - missSize.h / 2) + "px";
   }
 
-  miss.style.touchAction = "none";
-  miss.style.pointerEvents = "auto";
+  if (miss) {
+    miss.style.touchAction = "none";
+    miss.style.pointerEvents = "auto";
+  }
 
   function onDown(ev) {
     ev.preventDefault();
     dragging = true;
-    miss.classList.add("dragging");
-    try { miss.setPointerCapture(ev.pointerId); } catch (e) {}
+    if (miss) miss.classList.add("dragging");
+    try { if (miss && ev.pointerId != null) miss.setPointerCapture(ev.pointerId); } catch (e) {}
   }
 
   function onMove(ev) {
-    if (!dragging) return;
+    if (!dragging || !miss) return;
     let x = ev.clientX;
     let y = ev.clientY;
     x = Math.max(missSize.w / 2, Math.min(width - missSize.w / 2, x));
@@ -366,13 +420,14 @@ function enablePrestartMode() {
     miss.style.top = (y - missSize.h / 2) + "px";
   }
 
-  function onUp(ev) {
-    if (!dragging) return;
+  async function onUp(ev) {
+    if (!dragging || !miss) return;
     dragging = false;
     miss.classList.remove("dragging");
-    try { miss.releasePointerCapture(ev.pointerId); } catch (e) {}
+    try { if (ev.pointerId != null) miss.releasePointerCapture(ev.pointerId); } catch (e) {}
 
-    const rect = miss.getBoundingClientRect();
+    const rect = safeGetRect(miss);
+    if (!rect) return;
     const midY = rect.top + rect.height / 2;
     const midX = rect.left + rect.width / 2;
 
@@ -381,9 +436,8 @@ function enablePrestartMode() {
       segsInfo = computeSegments(path);
       const proj = projectPointOnPath(segsInfo, { x: midX, y: midY });
 
-      // Prüfe Abweichung beim Übergang
-      if (proj.dist > MAX_DEVIATION_PX) {
-        handleLoss();
+      if (proj.dist > getMaxDeviationPx()) {
+        await handleLoss();
         return;
       }
 
@@ -393,17 +447,17 @@ function enablePrestartMode() {
     }
   }
 
-  miss.removeEventListener("pointerdown", miss._preDown);
-  window.removeEventListener("pointermove", miss._preMove);
-  window.removeEventListener("pointerup", miss._preUp);
+  safeRemoveListener(miss, "pointerdown", miss._preDown);
+  safeRemoveListener(window, "pointermove", miss._preMove);
+  safeRemoveListener(window, "pointerup", miss._preUp);
 
   miss._preDown = onDown;
   miss._preMove = onMove;
   miss._preUp = onUp;
 
-  miss.addEventListener("pointerdown", miss._preDown);
-  window.addEventListener("pointermove", miss._preMove);
-  window.addEventListener("pointerup", miss._preUp);
+  safeAddListener(miss, "pointerdown", miss._preDown);
+  safeAddListener(window, "pointermove", miss._preMove);
+  safeAddListener(window, "pointerup", miss._preUp);
 
   draw();
 }
@@ -421,28 +475,34 @@ function startEvaluationMode(initialProj) {
     currentAlong = Math.max(0, Math.min(segsInfo.total, initialProj.along));
     lastAlong = currentAlong;
     const pos = pointAtDistance(segsInfo, currentAlong);
-    miss.style.left = (pos.x - missSize.w / 2) + "px";
-    miss.style.top = (pos.y - missSize.h / 2) + "px";
+    if (miss) {
+      miss.style.left = (pos.x - missSize.w / 2) + "px";
+      miss.style.top = (pos.y - missSize.h / 2) + "px";
+    }
   } else {
     currentAlong = 0;
     lastAlong = 0;
     const startP = pointAtDistance(segsInfo, 0);
-    miss.style.left = (startP.x - missSize.w / 2) + "px";
-    miss.style.top = (startP.y - missSize.h / 2) + "px";
+    if (miss) {
+      miss.style.left = (startP.x - missSize.w / 2) + "px";
+      miss.style.top = (startP.y - missSize.h / 2) + "px";
+    }
   }
 
-  miss.style.touchAction = "none";
-  miss.style.pointerEvents = "auto";
+  if (miss) {
+    miss.style.touchAction = "none";
+    miss.style.pointerEvents = "auto";
+  }
 
   function onDown(ev) {
     ev.preventDefault();
     dragging = true;
-    miss.classList.add("dragging");
-    try { miss.setPointerCapture(ev.pointerId); } catch (e) {}
+    if (miss) miss.classList.add("dragging");
+    try { if (miss && ev.pointerId != null) miss.setPointerCapture(ev.pointerId); } catch (e) {}
   }
 
-  function onMove(ev) {
-    if (!dragging) return;
+  async function onMove(ev) {
+    if (!dragging || !miss) return;
     let x = ev.clientX;
     let y = ev.clientY;
     x = Math.max(missSize.w / 2, Math.min(width - missSize.w / 2, x));
@@ -452,9 +512,8 @@ function startEvaluationMode(initialProj) {
 
     const proj = projectPointOnPath(segsInfo, { x, y });
 
-    // Wegerkennung: wenn Finger zu weit weg, Runde verloren -> Leben abziehen / Ende prüfen
-    if (proj.dist > MAX_DEVIATION_PX) {
-      handleLoss();
+    if (proj.dist > getMaxDeviationPx()) {
+      await handleLoss();
       return;
     }
 
@@ -471,38 +530,35 @@ function startEvaluationMode(initialProj) {
 
     if (currentAlong >= segsInfo.total - END_THRESHOLD) {
       dragging = false;
-      try { miss.releasePointerCapture(ev.pointerId); } catch (e) {}
-      miss.classList.remove("dragging");
-
-      // Completed round: advance to next round (no highscore here)
+      try { if (ev.pointerId != null) miss.releasePointerCapture(ev.pointerId); } catch (e) {}
+      if (miss) miss.classList.remove("dragging");
       onSuccess();
     }
   }
 
-  function onUp(ev) {
-    if (!dragging) return;
+  async function onUp(ev) {
+    if (!dragging || !miss) return;
     dragging = false;
-    miss.classList.remove("dragging");
-    try { miss.releasePointerCapture(ev.pointerId); } catch (e) {}
+    if (miss) miss.classList.remove("dragging");
+    try { if (ev.pointerId != null) miss.releasePointerCapture(ev.pointerId); } catch (e) {}
     if (segsInfo && currentAlong >= segsInfo.total - END_THRESHOLD) {
       onSuccess();
     } else {
-      // Losgelassen bevor Ziel erreicht -> Verlust
-      handleLoss();
+      await handleLoss();
     }
   }
 
-  miss.removeEventListener("pointerdown", miss._downHandler);
-  window.removeEventListener("pointermove", miss._moveHandler);
-  window.removeEventListener("pointerup", miss._upHandler);
+  safeRemoveListener(miss, "pointerdown", miss._downHandler);
+  safeRemoveListener(window, "pointermove", miss._moveHandler);
+  safeRemoveListener(window, "pointerup", miss._upHandler);
 
   miss._downHandler = onDown;
   miss._moveHandler = onMove;
   miss._upHandler = onUp;
 
-  miss.addEventListener("pointerdown", miss._downHandler);
-  window.addEventListener("pointermove", miss._moveHandler);
-  window.addEventListener("pointerup", miss._upHandler);
+  safeAddListener(miss, "pointerdown", miss._downHandler);
+  safeAddListener(window, "pointermove", miss._moveHandler);
+  safeAddListener(window, "pointerup", miss._upHandler);
 
   draw();
 }
@@ -515,13 +571,13 @@ function onSuccess() {
   flash("green");
   setTimeout(async () => {
     round++;
-    roundNumEl.textContent = round;
+    if (roundNumEl) roundNumEl.textContent = round;
     path = generatePathForRound(round);
     segsInfo = computeSegments(path);
     currentAlong = 0;
     lastAlong = 0;
     await animatePreview(path);
-    if (path && path.length > 0) {
+    if (path && path.length > 0 && miss) {
       const startP = path[0];
       miss.style.left = (startP.x - missSize.w / 2) + "px";
       miss.style.top = (startP.y - missSize.h / 2) + "px";
@@ -547,7 +603,7 @@ function flash(color) {
 
 if (startBtn) {
   startBtn.addEventListener("click", async () => {
-    const rect = miss.getBoundingClientRect();
+    const rect = safeGetRect(miss);
     if (rect && rect.width) {
       missSize.w = rect.width;
       missSize.h = rect.height;
@@ -557,7 +613,7 @@ if (startBtn) {
     segsInfo = computeSegments(path);
 
     await animatePreview(path);
-    if (path && path.length > 0) {
+    if (path && path.length > 0 && miss) {
       const startP = path[0];
       miss.style.left = (startP.x - missSize.w / 2) + "px";
       miss.style.top = (startP.y - missSize.h / 2) + "px";
@@ -568,25 +624,52 @@ if (startBtn) {
 }
 
 /* ---------------------------
+   Miss image size initialization (wait for load)
+   --------------------------- */
+
+function initMissSizeFromImage() {
+  if (!miss) return;
+  function setSize() {
+    const rect = safeGetRect(miss);
+    if (rect && rect.width) {
+      missSize.w = rect.width;
+      missSize.h = rect.height;
+    }
+  }
+  if (miss.complete) {
+    setSize();
+  } else {
+    safeAddListener(miss, 'load', setSize, { once: true });
+    setTimeout(setSize, 500);
+  }
+}
+initMissSizeFromImage();
+
+/* ---------------------------
    Initialisierung Highscore + Startzustand
    --------------------------- */
 
-// Highscore UI initialisieren (Button rechts unten)
 try {
-  Highscore.init({ title: "Highscores", showButton: true, buttonText: "Highscores", attachTo: document.body });
+  if (typeof Highscore !== 'undefined' && Highscore && typeof Highscore.init === 'function') {
+    Highscore.init({ title: "Highscores", showButton: true, buttonText: "Highscores", attachTo: document.body });
+  }
 } catch (e) {
   console.warn("Highscore init failed", e);
 }
 
-// Erzeuge ersten Pfad und Preview beim Laden, falls gewünscht
+// Erzeuge ersten Pfad und Preview beim Laden
 (function initialSetup() {
   path = generatePathForRound(round);
   segsInfo = computeSegments(path);
-  // setze miss auf Startposition (sichtbar)
-  if (path && path.length > 0) {
+  if (path && path.length > 0 && miss) {
     const startP = path[0];
     miss.style.left = (startP.x - missSize.w / 2) + "px";
     miss.style.top = (startP.y - missSize.h / 2) + "px";
+  } else if (miss) {
+    const sx = Math.round(width / 2);
+    const sy = Math.round(height * START_Y_FACTOR);
+    miss.style.left = (sx - missSize.w / 2) + "px";
+    miss.style.top = (sy - missSize.h / 2) + "px";
   }
   draw();
   updateLivesUI();
