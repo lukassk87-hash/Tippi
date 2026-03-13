@@ -405,9 +405,7 @@ function runGameOver() {
   overlay.innerHTML = `
     <div class="gameOverContainer">
       <div class="gameOverTitle">GAME OVER</div>
-      <div class="gameOverScore">Runden: ${score}</div>
-      <button id="backToMenuBtn" class="menuButton">Hauptmenü</button>
-    </div>
+      <div class="gameOverScore">Runden: ${score}
   `;
   overlay.classList.add("gameOverScreen");
 
@@ -709,4 +707,14 @@ try {
 
   enablePrestartMode();
   draw();
-})(); 
+})();
+// Sicherstellen, dass der Button existiert und klickbar ist
+(function(){
+  const btn = document.getElementById('menuBtn');
+  if (!btn) return;
+  // Entferne mögliche Inline-Blocker
+  btn.style.pointerEvents = 'auto';
+  btn.addEventListener('click', () => {
+    window.location.href = 'index.html';
+  }, { passive: true });
+})();
