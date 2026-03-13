@@ -65,5 +65,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: pokemon.apk
+          name: tico.apk
           path: android/app/build/outputs/apk/debug/*.apk
