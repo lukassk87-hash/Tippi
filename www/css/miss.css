@@ -166,3 +166,31 @@ html, body {
   outline-offset: 2px;
   box-shadow: 0 6px 18px rgba(0,0,0,0.6);
 }
+.gameOverScreen {
+  background: rgba(0,0,0,0.85) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gameOverContainer {
+  text-align: center;
+  color: white;
+  font-family: system-ui, sans-serif;
+}
+
+.gameOverTitle {
+  font-size: 48px;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+.menuButton {
+  padding: 14px 24px;
+  font-size: 20px;
+  border-radius: 10px;
+  border: none;
+  background: #ffffff;
+  color: #000;
+  cursor: pointer;
+}
