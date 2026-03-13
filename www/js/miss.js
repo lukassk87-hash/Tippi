@@ -1,17 +1,7 @@
-/* =========================
-   miss.js (komplett)
-   - Preview 20% langsamer (PREVIEW_DURATION_MULTIPLIER = 2.4)
-   - Bei Lebenverlust: Spiel pausiert sofort, zeigt "Leben verloren" Modal mit "Weiter geht's"
-   - Nach Bestätigung: Fortsetzen in derselben Runde vom Startpunkt (kein neues Preview)
-   - Bei aufgebrauchten Leben: Game Over Modal mit Neustart / Hauptmenü
-   - Verhindert mehrfaches Abziehen durch lossInProgress-Flag
-   - Robuste DOM-Guards, Debounced resize, dynamische Abweichung
-   ========================= */
-
 'use strict';
 
 /* ---------------------------
-   DOM Elemente (können beim Laden noch null sein)
+   DOM Elemente
    --------------------------- */
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas ? canvas.getContext("2d") : null;
@@ -21,81 +11,7 @@ const startBtn = document.getElementById("startBtn");
 const roundNumEl = document.getElementById("roundNum");
 
 /* ---------------------------
-   Modal / UI helpers
-   --------------------------- */
-
-let modalCounter = 0;
-function createModalElement() {
-  const id = `miss-modal-${++modalCounter}`;
-  const wrapper = document.createElement('div');
-  wrapper.id = id;
-  wrapper.style.position = 'fixed';
-  wrapper.style.left = '0';
-  wrapper.style.top = '0';
-  wrapper.style.width = '100%';
-  wrapper.style.height = '100%';
-  wrapper.style.display = 'flex';
-  wrapper.style.alignItems = 'center';
-  wrapper.style.justifyContent = 'center';
-  wrapper.style.zIndex = 100000;
-  wrapper.style.pointerEvents = 'auto';
-  wrapper.style.background = 'rgba(0,0,0,0.45)';
-  return wrapper;
-}
-
-/**
- * showInfoModal(message, buttons)
- * - message: string (HTML allowed)
- * - buttons: [{ id: 'ok', label: 'OK', className: 'primary' }, ...]
- * Returns Promise resolving to clicked button id.
- */
-function showInfoModal(message, buttons = [{ id: 'ok', label: 'OK' }]) {
-  return new Promise(resolve => {
-    const wrapper = createModalElement();
-    const box = document.createElement('div');
-    box.style.minWidth = '280px';
-    box.style.maxWidth = '92%';
-    box.style.background = '#111';
-    box.style.color = '#fff';
-    box.style.padding = '18px';
-    box.style.borderRadius = '12px';
-    box.style.boxShadow = '0 10px 40px rgba(0,0,0,0.6)';
-    box.style.textAlign = 'center';
-    box.style.pointerEvents = 'auto';
-    box.innerHTML = `<div style="margin-bottom:12px; font-size:16px; line-height:1.3;">${message}</div>`;
-
-    const btnRow = document.createElement('div');
-    btnRow.style.display = 'flex';
-    btnRow.style.justifyContent = 'center';
-    btnRow.style.gap = '10px';
-    btnRow.style.marginTop = '6px';
-
-    buttons.forEach(b => {
-      const btn = document.createElement('button');
-      btn.textContent = b.label;
-      btn.dataset.mid = b.id;
-      btn.style.padding = '8px 14px';
-      btn.style.borderRadius = '8px';
-      btn.style.border = 'none';
-      btn.style.cursor = 'pointer';
-      btn.style.fontSize = '15px';
-      btn.style.background = b.className === 'primary' ? '#2ecc71' : '#333';
-      btn.style.color = '#fff';
-      btn.addEventListener('click', () => {
-        try { document.body.removeChild(wrapper); } catch (e) {}
-        resolve(b.id);
-      });
-      btnRow.appendChild(btn);
-    });
-
-    box.appendChild(btnRow);
-    wrapper.appendChild(box);
-    document.body.appendChild(wrapper);
-  });
-}
-
-/* ---------------------------
-   Lives UI element (erstellt, falls nicht vorhanden)
+   Lives UI
    --------------------------- */
 let lives = 3;
 function ensureLivesUI() {
@@ -120,28 +36,29 @@ function ensureLivesUI() {
 }
 ensureLivesUI();
 
-/* ---------------------------
-   Defensive helper: safe add/remove listeners
-   --------------------------- */
-function safeAddListener(el, evt, handler, opts) {
-  if (!el || typeof el.addEventListener !== 'function') return;
-  el.addEventListener(evt, handler, opts);
-}
-function safeRemoveListener(el, evt, handler, opts) {
-  if (!el || typeof el.removeEventListener !== 'function') return;
-  try { el.removeEventListener(evt, handler, opts); } catch (e) {}
+function updateLivesUI() {
+  const el = document.getElementById("livesDisplay");
+  if (el) el.textContent = `Leben: ${lives}`;
 }
 
 /* ---------------------------
-   Safe getBoundingClientRect
+   Helpers
    --------------------------- */
+function safeAddListener(el, evt, handler, opts) {
+  if (!el || !el.addEventListener) return;
+  el.addEventListener(evt, handler, opts);
+}
+function safeRemoveListener(el, evt, handler, opts) {
+  if (!el || !el.removeEventListener) return;
+  try { el.removeEventListener(evt, handler, opts); } catch (e) {}
+}
 function safeGetRect(el) {
-  if (!el || typeof el.getBoundingClientRect !== 'function') return null;
+  if (!el || !el.getBoundingClientRect) return null;
   try { return el.getBoundingClientRect(); } catch (e) { return null; }
 }
 
 /* ---------------------------
-   Spielzustand / Einstellungen
+   Spielzustand
    --------------------------- */
 let width = 0;
 let height = 0;
@@ -149,40 +66,32 @@ let path = [];
 let segsInfo = null;
 let round = 1;
 
-const EDGE_MARGIN = 40;
 let missSize = { w: 80, h: 80 };
 let topQuarterY = 0;
-let debug = false;
 
-// Positioning factors
-const START_Y_FACTOR = 0.18;
-const TARGET_Y_FACTOR = 0.78;
-const PRESTART_THRESHOLD_FACTOR = 0.60;
-
-// Preview speed multiplier (20% slower than previous 2.0 -> 2.4)
-const PREVIEW_DURATION_MULTIPLIER = 2.4;
-
-// Wegerkennung: dynamisch berechnet
-function getMaxDeviationPx() {
-  return Math.max(24, Math.round(Math.min(missSize.w, missSize.h) * 0.6));
-}
+let debug = false;          // Safe‑Zone gekoppelt an debug
+let showSafeZone = debug;
 
 let prestartActive = false;
 let playing = false;
 let dragging = false;
+
 let currentAlong = 0;
 let lastAlong = 0;
 
-// Prevent re-entrant loss handling
-let lossInProgress = false;
+let lossInProgress = false;     // verhindert parallele Fehlerbehandlung
+let freezeInput = false;        // verhindert Bewegung während Fehlerphase
+
+const START_Y_FACTOR = 0.18;
+const TARGET_Y_FACTOR = 0.78;
+const PRESTART_THRESHOLD_FACTOR = 0.60;
 
 const PRESTART_EXIT_BUFFER = 8;
 const END_THRESHOLD = 6;
 
 /* ---------------------------
-   Resize handler mit Debounce
+   Resize
    --------------------------- */
-let resizeTimer = null;
 function resizeGame() {
   if (!canvas) return;
   const w = Math.floor(window.innerWidth);
@@ -190,8 +99,8 @@ function resizeGame() {
 
   canvas.width = w;
   canvas.height = h;
-  canvas.style.width = w + 'px';
-  canvas.style.height = h + 'px';
+  canvas.style.width = w + "px";
+  canvas.style.height = h + "px";
 
   width = w;
   height = h;
@@ -199,460 +108,362 @@ function resizeGame() {
   topQuarterY = Math.round(height * PRESTART_THRESHOLD_FACTOR);
 
   const rect = safeGetRect(miss);
-  if (rect && rect.width) {
+  if (rect) {
     missSize.w = rect.width;
     missSize.h = rect.height;
   }
   draw();
 }
-window.addEventListener('resize', () => {
-  clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(resizeGame, 120);
-});
+window.addEventListener("resize", resizeGame);
 resizeGame();
 
 /* ---------------------------
-   Spline / Geometrie
+   Spline
    --------------------------- */
 function catmullRom(p0, p1, p2, p3, t) {
   const t2 = t * t;
   const t3 = t2 * t;
-  const x = 0.5 * ((2 * p1.x) +
-    (-p0.x + p2.x) * t +
-    (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 +
-    (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3);
-  const y = 0.5 * ((2 * p1.y) +
-    (-p0.y + p2.y) * t +
-    (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 +
-    (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3);
-  return { x, y };
+  return {
+    x: 0.5 * ((2*p1.x) + (-p0.x+p2.x)*t + (2*p0.x-5*p1.x+4*p2.x-p3.x)*t2 + (-p0.x+3*p1.x-3*p2.x+p3.x)*t3),
+    y: 0.5 * ((2*p1.y) + (-p0.y+p2.y)*t + (2*p0.y-5*p1.y+4*p2.y-p3.y)*t2 + (-p0.y+3*p1.y-3*p2.y+p3.y)*t3)
+  };
 }
 
-function getSplinePoints(ctrlPoints, samplesPerSeg = 12) {
-  if (!ctrlPoints || ctrlPoints.length < 2) return ctrlPoints ? ctrlPoints.slice() : [];
+function getSplinePoints(ctrl, samples=12) {
+  if (!ctrl || ctrl.length < 2) return ctrl || [];
   const pts = [];
-  const padded = [ctrlPoints[0], ...ctrlPoints, ctrlPoints[ctrlPoints.length - 1]];
-  for (let i = 0; i < padded.length - 3; i++) {
-    const p0 = padded[i], p1 = padded[i + 1], p2 = padded[i + 2], p3 = padded[i + 3];
-    for (let s = 0; s < samplesPerSeg; s++) {
-      const t = s / samplesPerSeg;
-      pts.push(catmullRom(p0, p1, p2, p3, t));
+  const pad = [ctrl[0], ...ctrl, ctrl[ctrl.length-1]];
+  for (let i=0;i<pad.length-3;i++) {
+    const p0=pad[i], p1=pad[i+1], p2=pad[i+2], p3=pad[i+3];
+    for (let s=0;s<samples;s++) {
+      pts.push(catmullRom(p0,p1,p2,p3, s/samples));
     }
   }
-  pts.push(ctrlPoints[ctrlPoints.length - 1]);
+  pts.push(ctrl[ctrl.length-1]);
   return pts;
 }
 
 /* ---------------------------
-   Pfad-Generierung (angepasst)
+   Pfad
    --------------------------- */
 function generatePathForRound(r) {
-  const nominalStartY = Math.max(EDGE_MARGIN, Math.round(height * START_Y_FACTOR));
-  const targetY = Math.max(nominalStartY + 50, Math.round(height * TARGET_Y_FACTOR));
+  const startY = Math.round(height * START_Y_FACTOR);
+  const targetY = Math.round(height * TARGET_Y_FACTOR);
   const centerX = Math.round(width / 2);
 
   const curves = Math.min(10, Math.max(0, r - 1));
   const ctrlCount = Math.max(2, curves * 2 + 2);
 
-  const maxLateralHalf = Math.round(width * 0.45);
-  const baseAmp = Math.max(40, Math.round(missSize.w * 2.0));
-  const ampFactor = 1.0 + Math.min(2.0, r * 0.12);
-
-  const preferredTop = Math.round(height * START_Y_FACTOR);
-  const startY = Math.max(EDGE_MARGIN, Math.min(nominalStartY, preferredTop));
+  const maxLat = Math.round(width * 0.45);
+  const baseAmp = Math.max(40, Math.round(missSize.w * 2));
+  const ampFactor = 1 + Math.min(2, r * 0.12);
 
   const ctrl = [];
-  for (let i = 0; i < ctrlCount; i++) {
-    const t = i / (ctrlCount - 1);
-    const y = startY + (targetY - startY) * t;
+  for (let i=0;i<ctrlCount;i++) {
+    const t = i/(ctrlCount-1);
+    const y = startY + (targetY - startY)*t;
+
     let lateral = 0;
     if (curves > 0) {
-      const amp = Math.min(maxLateralHalf, Math.round(baseAmp * ampFactor));
-      const phase = (i / (ctrlCount - 1)) * Math.PI * curves;
+      const amp = Math.min(maxLat, Math.round(baseAmp * ampFactor));
+      const phase = t * Math.PI * curves;
       const taper = Math.sin(Math.PI * t);
       lateral = Math.sin(phase) * amp * taper;
-      const jitter = (Math.random() * 2 - 1) * Math.min(8, r);
-      lateral += jitter;
+      lateral += (Math.random()*2-1) * Math.min(8,r);
     }
+
     let x = centerX + lateral;
-    x = Math.max(Math.round(missSize.w / 2), Math.min(width - Math.round(missSize.w / 2), x));
-    ctrl.push({ x, y });
+    x = Math.max(missSize.w/2, Math.min(width - missSize.w/2, x));
+    ctrl.push({x,y});
   }
 
-  return getSplinePoints(ctrl, Math.min(24, 12 + Math.floor(r / 2)));
+  return getSplinePoints(ctrl, Math.min(24, 12 + Math.floor(r/2)));
 }
 
 /* ---------------------------
-   Segment-Helpers
+   Segmente
    --------------------------- */
-function computeSegments(points) {
+function computeSegments(pts) {
   const segs = [];
   let total = 0;
-  if (!points || points.length < 2) return { segs, total };
-  for (let i = 0; i < points.length - 1; i++) {
-    const a = points[i], b = points[i + 1];
-    const dx = b.x - a.x, dy = b.y - a.y;
-    const len = Math.sqrt(dx * dx + dy * dy);
-    segs.push({ a, b, len });
-    total += len;
+  for (let i=0;i<pts.length-1;i++) {
+    const a=pts[i], b=pts[i+1];
+    const dx=b.x-a.x, dy=b.y-a.y;
+    const len=Math.sqrt(dx*dx+dy*dy);
+    segs.push({a,b,len});
+    total+=len;
   }
-  return { segs, total };
+  return {segs,total};
 }
 
 function pointAtDistance(si, d) {
-  if (!si || !si.segs || si.segs.length === 0) return { x: 0, y: 0 };
-  const { segs, total } = si;
-  if (d <= 0) return segs[0].a;
-  if (d >= total) return segs[segs.length - 1].b;
-  let acc = 0;
-  for (let i = 0; i < segs.length; i++) {
-    const s = segs[i];
+  if (!si || !si.segs.length) return {x:0,y:0};
+  if (d<=0) return si.segs[0].a;
+  if (d>=si.total) return si.segs[si.segs.length-1].b;
+
+  let acc=0;
+  for (let s of si.segs) {
     if (acc + s.len >= d) {
-      const t = (d - acc) / s.len;
-      return { x: s.a.x + (s.b.x - s.a.x) * t, y: s.a.y + (s.b.y - s.a.y) * t };
+      const t=(d-acc)/s.len;
+      return {x:s.a.x+(s.b.x-s.a.x)*t, y:s.a.y+(s.b.y-s.a.y)*t};
     }
-    acc += s.len;
+    acc+=s.len;
   }
-  return segs[segs.length - 1].b;
+  return si.segs[si.segs.length-1].b;
 }
 
 function projectPointOnPath(si, p) {
-  const best = { dist: Infinity, along: 0, point: null };
-  if (!si || !si.segs || si.segs.length === 0) return best;
-  const { segs } = si;
-  let acc = 0;
-  for (let i = 0; i < segs.length; i++) {
-    const s = segs[i];
-    const ax = s.a.x, ay = s.a.y, bx = s.b.x, by = s.b.y;
-    const vx = bx - ax, vy = by - ay;
-    const wx = p.x - ax, wy = p.y - ay;
-    const len2 = vx * vx + vy * vy;
-    let t = 0;
-    if (len2 > 0) t = (vx * wx + vy * wy) / len2;
-    t = Math.max(0, Math.min(1, t));
-    const projX = ax + vx * t, projY = ay + vy * t;
-    const dx = p.x - projX, dy = p.y - projY;
-    const d = Math.sqrt(dx * dx + dy * dy);
-    const along = acc + s.len * t;
-    if (d < best.dist) best.dist = d, best.along = along, best.point = { x: projX, y: projY };
-    acc += s.len;
+  let best={dist:Infinity, along:0};
+  let acc=0;
+  for (let s of si.segs) {
+    const ax=s.a.x, ay=s.a.y, bx=s.b.x, by=s.b.y;
+    const vx=bx-ax, vy=by-ay;
+    const wx=p.x-ax, wy=p.y-ay;
+    const len2=vx*vx+vy*vy;
+    let t=0;
+    if (len2>0) t=(vx*wx+vy*wy)/len2;
+    t=Math.max(0,Math.min(1,t));
+    const px=ax+vx*t, py=ay+vy*t;
+    const dx=p.x-px, dy=p.y-py;
+    const d=Math.sqrt(dx*dx+dy*dy);
+    const along=acc + s.len*t;
+    if (d<best.dist) best={dist:d, along};
+    acc+=s.len;
   }
   return best;
 }
 
 /* ---------------------------
-   Preview Animation (slower)
+   Safe‑Zone gekoppelt an debug
    --------------------------- */
-function animatePreview(points) {
+function getMaxDeviationPx() {
+  return Math.max(24, Math.round(Math.min(missSize.w, missSize.h) * 0.6));
+}
+
+function draw() {
+  if (!ctx) return;
+  ctx.clearRect(0,0,width,height);
+
+  if (showSafeZone && path.length>1) {
+    ctx.save();
+    ctx.lineWidth = getMaxDeviationPx()*2;
+    ctx.strokeStyle = "rgba(0,150,255,0.12)";
+    ctx.lineJoin="round";
+    ctx.lineCap="round";
+    ctx.beginPath();
+    ctx.moveTo(path[0].x,path[0].y);
+    for (let i=1;i<path.length;i++) ctx.lineTo(path[i].x,path[i].y);
+    ctx.stroke();
+
+    ctx.lineWidth = getMaxDeviationPx()*0.25;
+    ctx.strokeStyle = "rgba(0,150,255,0.18)";
+    ctx.beginPath();
+    ctx.moveTo(path[0].x,path[0].y);
+    for (let i=1;i<path.length;i++) ctx.lineTo(path[i].x,path[i].y);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+}
+
+/* ---------------------------
+   Preview
+   --------------------------- */
+async function animatePreview(points) {
   return new Promise(resolve => {
     if (!points || points.length < 2) return resolve();
     segsInfo = computeSegments(points);
     const total = segsInfo.total;
 
-    const base = Math.max(700, Math.min(2200, total * 0.45));
-    const duration = base * PREVIEW_DURATION_MULTIPLIER; // slower by multiplier
-
+    const duration = Math.max(700, Math.min(2200, total * 0.45));
     const startTime = performance.now();
 
     function step(now) {
       const t = Math.min(1, (now - startTime) / duration);
       const dist = t * total;
       const p = pointAtDistance(segsInfo, dist);
-      if (miss) {
-        miss.style.left = (p.x - missSize.w / 2) + "px";
-        miss.style.top = (p.y - missSize.h / 2) + "px";
-      }
+
+      miss.style.left = (p.x - missSize.w/2) + "px";
+      miss.style.top  = (p.y - missSize.h/2) + "px";
+
       draw();
-      if (t < 1) {
-        requestAnimationFrame(step);
-      } else {
-        currentAlong = 0;
-        lastAlong = 0;
-        resolve();
-      }
+
+      if (t < 1) requestAnimationFrame(step);
+      else resolve();
     }
 
     const startP = points[0];
-    if (miss) {
-      miss.style.left = (startP.x - missSize.w / 2) + "px";
-      miss.style.top = (startP.y - missSize.h / 2) + "px";
-    }
+    miss.style.left = (startP.x - missSize.w/2) + "px";
+    miss.style.top  = (startP.y - missSize.h/2) + "px";
+
     requestAnimationFrame(step);
   });
 }
 
 /* ---------------------------
-   Draw (Canvas remains mostly empty)
+   startCurrentRound — WICHTIG!
    --------------------------- */
-function draw() {
-  if (!ctx) return;
-  ctx.clearRect(0, 0, width, height);
-  if (debug && path && path.length > 1) {
-    ctx.save();
-    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-    ctx.lineWidth = 6;
-    ctx.beginPath();
-    ctx.moveTo(path[0].x, path[0].y);
-    for (let i = 1; i < path.length; i++) ctx.lineTo(path[i].x, path[i].y);
-    ctx.stroke();
-    ctx.restore();
+async function startCurrentRound(withPreview = true) {
+  path = generatePathForRound(round);
+  segsInfo = computeSegments(path);
+  currentAlong = 0;
+  lastAlong = 0;
+
+  if (withPreview) {
+    await animatePreview(path);
   }
-}
 
+  const startP = path[0];
+  miss.style.left = (startP.x - missSize.w/2) + "px";
+  miss.style.top  = (startP.y - missSize.h/2) + "px";
+
+  enablePrestartMode();
+  draw();
+}
 /* ---------------------------
-   Leben / Verlustbehandlung (fixed)
+   Verlust‑Logik (Variante A1)
    --------------------------- */
-
-function updateLivesUI() {
-  const el = document.getElementById("livesDisplay");
-  if (el) el.textContent = `Leben: ${lives}`;
-}
-
-async function handleLoss() {
-  // Verhindere Re-Entrancy: wenn bereits Loss-Handling läuft, ignoriere weitere Aufrufe
+async function triggerLossCheckLoop() {
   if (lossInProgress) return;
   lossInProgress = true;
+  freezeInput = true;
 
-  // Sofort visuelles Feedback und Interaktionen pausieren
-  flash("red");
-  pauseInteraction();
+  overlay.classList.add("redFlash");
 
-  // Kurze Verzögerung, damit Flash sichtbar ist
-  await new Promise(res => setTimeout(res, 250));
+  while (true) {
+    await new Promise(r => setTimeout(r, 200));
 
-  // Leben genau einmal abziehen
-  lives = Math.max(0, lives - 1);
-  updateLivesUI();
+    const rect = safeGetRect(miss);
+    if (!rect) continue;
 
-  // Wenn noch Leben vorhanden sind: Modal anzeigen und auf Bestätigung warten
-  if (lives > 0) {
-    await showInfoModal(
-      `Du hast ein Leben verloren. Verbleibende Leben: <strong>${lives}</strong>.<br>Drücke "Weiter geht's", um es erneut zu versuchen.`,
-      [{ id: 'continue', label: 'Weiter geht\'s', className: 'primary' }]
-    );
+    const midX = rect.left + rect.width / 2;
+    const midY = rect.top + rect.height / 2;
 
-    // KEIN neues Preview! Miss zurück auf Startposition der aktuellen Runde setzen
-    if (path && path.length > 0 && miss) {
-      const startP = path[0];
-      miss.style.left = (startP.x - missSize.w / 2) + "px";
-      miss.style.top = (startP.y - missSize.h / 2) + "px";
-    } else if (miss) {
-      const sx = Math.round(width / 2);
-      const sy = Math.round(height * START_Y_FACTOR);
-      miss.style.left = (sx - missSize.w / 2) + "px";
-      miss.style.top = (sy - missSize.h / 2) + "px";
+    const proj = projectPointOnPath(segsInfo, { x: midX, y: midY });
+
+    if (proj.dist <= getMaxDeviationPx()) {
+      lives = Math.max(0, lives - 1);
+      updateLivesUI();
+
+      overlay.classList.remove("redFlash");
+      freezeInput = false;
+      lossInProgress = false;
+      return;
     }
-
-    // Prestart-Modus wieder aktivieren, damit der Spieler erneut vom Startpunkt losziehen kann
-    enablePrestartMode();
-
-    // Loss-Handling abgeschlossen
-    lossInProgress = false;
-    return;
   }
-
-  // lives == 0 -> Game Over
-  try {
-    if (typeof Highscore !== 'undefined' && Highscore && typeof Highscore.recordEndOfGame === 'function') {
-      Highscore.recordEndOfGame(round);
-    }
-  } catch (e) {
-    console.warn("Highscore.recordEndOfGame failed", e);
-  }
-
-  const goChoice = await showInfoModal(
-    `<strong>Game Over</strong><br>Du hast alle Leben verloren.<br>Erreichte Runde: <strong>${round}</strong>`,
-    [
-      { id: 'restart', label: 'Neustart', className: 'primary' },
-      { id: 'menu', label: 'Hauptmenü', className: 'secondary' }
-    ]
-  );
-
-  if (goChoice === 'restart') {
-    // Reset game state and start from round 1
-    round = 1;
-    lives = 3;
-    updateLivesUI();
-    if (roundNumEl) roundNumEl.textContent = round;
-
-    path = generatePathForRound(round);
-    segsInfo = computeSegments(path);
-    currentAlong = 0;
-    lastAlong = 0;
-
-    // Beim Neustart ist Preview erwünscht
-    await animatePreview(path);
-    if (path && path.length > 0 && miss) {
-      const startP = path[0];
-      miss.style.left = (startP.x - missSize.w / 2) + "px";
-      miss.style.top = (startP.y - missSize.h / 2) + "px";
-    }
-    draw();
-    enablePrestartMode();
-    lossInProgress = false;
-    return;
-  }
-
-  if (goChoice === 'menu') {
-    try { window.location.href = 'index.html'; } catch (e) {}
-    // no further action
-    return;
-  }
-
-  // fallback
-  enablePrestartMode();
-  lossInProgress = false;
-}
-
-/* ---------------------------
-   Pause / Resume Interaction Helpers
-   --------------------------- */
-
-function pauseInteraction() {
-  prestartActive = false;
-  playing = false;
-  dragging = false;
-
-  // Remove any pointer handlers safely
-  safeRemoveListener(miss, "pointerdown", miss._preDown);
-  safeRemoveListener(window, "pointermove", miss._preMove);
-  safeRemoveListener(window, "pointerup", miss._preUp);
-
-  safeRemoveListener(miss, "pointerdown", miss._downHandler);
-  safeRemoveListener(window, "pointermove", miss._moveHandler);
-  safeRemoveListener(window, "pointerup", miss._upHandler);
-
-  if (miss) miss.classList.remove("dragging");
 }
 
 /* ---------------------------
    Prestart
    --------------------------- */
-
 function enablePrestartMode() {
   prestartActive = true;
   playing = false;
   dragging = false;
 
-  if (path && path.length > 0 && miss) {
-    const startP = path[0];
-    miss.style.left = (startP.x - missSize.w / 2) + "px";
-    miss.style.top = (startP.y - missSize.h / 2) + "px";
-  } else if (miss) {
-    const sx = Math.round(width / 2);
-    const sy = Math.round(height * START_Y_FACTOR);
-    miss.style.left = (sx - missSize.w / 2) + "px";
-    miss.style.top = (sy - missSize.h / 2) + "px";
-  }
+  if (miss) miss._preSwitchedToEval = false;
 
-  if (miss) {
-    miss.style.touchAction = "none";
-    miss.style.pointerEvents = "auto";
-  }
+  const startP = path[0];
+  miss.style.left = (startP.x - missSize.w / 2) + "px";
+  miss.style.top = (startP.y - missSize.h / 2) + "px";
+
+  miss.style.touchAction = "none";
+  miss.style.pointerEvents = "auto";
 
   function onDown(ev) {
+    if (freezeInput) return;
     ev.preventDefault();
     dragging = true;
-    if (miss) miss.classList.add("dragging");
-    try { if (miss && ev.pointerId != null) miss.setPointerCapture(ev.pointerId); } catch (e) {}
+    miss.classList.add("dragging");
+    try { miss.setPointerCapture(ev.pointerId); } catch (e) {}
   }
 
-  function onMove(ev) {
-    if (!dragging || !miss) return;
-    let x = ev.clientX;
-    let y = ev.clientY;
+  async function onMove(ev) {
+    if (!dragging || freezeInput) return;
+
+    let x = ev.clientX, y = ev.clientY;
     x = Math.max(missSize.w / 2, Math.min(width - missSize.w / 2, x));
     y = Math.max(missSize.h / 2, Math.min(height - missSize.h / 2, y));
     miss.style.left = (x - missSize.w / 2) + "px";
     miss.style.top = (y - missSize.h / 2) + "px";
-  }
-
-  async function onUp(ev) {
-    if (!dragging || !miss) return;
-    dragging = false;
-    miss.classList.remove("dragging");
-    try { if (ev.pointerId != null) miss.releasePointerCapture(ev.pointerId); } catch (e) {}
 
     const rect = safeGetRect(miss);
     if (!rect) return;
-    const midY = rect.top + rect.height / 2;
     const midX = rect.left + rect.width / 2;
+    const midY = rect.top + rect.height / 2;
 
     if (midY > topQuarterY - PRESTART_EXIT_BUFFER) {
-      if (!path || path.length < 2) return;
-      segsInfo = computeSegments(path);
       const proj = projectPointOnPath(segsInfo, { x: midX, y: midY });
 
       if (proj.dist > getMaxDeviationPx()) {
-        // Immediately handle loss (will pause and show modal)
-        await handleLoss();
+        triggerLossCheckLoop();
         return;
       }
 
+      miss._preSwitchedToEval = true;
+
+      safeRemoveListener(miss, "pointerdown", miss._preDown);
+      safeRemoveListener(window, "pointermove", miss._preMove);
+      safeRemoveListener(window, "pointerup", miss._preUp);
+
       prestartActive = false;
       startEvaluationMode(proj);
-      return;
+
+      try { miss.setPointerCapture(ev.pointerId); } catch (e) {}
+      if (miss._moveHandler) miss._moveHandler(ev);
     }
   }
 
-  safeRemoveListener(miss, "pointerdown", miss._preDown);
-  safeRemoveListener(window, "pointermove", miss._preMove);
-  safeRemoveListener(window, "pointerup", miss._preUp);
+  function onUp(ev) {
+    if (!dragging) return;
+    dragging = false;
+    miss.classList.remove("dragging");
+    try { miss.releasePointerCapture(ev.pointerId); } catch (e) {}
+  }
 
   miss._preDown = onDown;
   miss._preMove = onMove;
   miss._preUp = onUp;
 
-  safeAddListener(miss, "pointerdown", miss._preDown);
-  safeAddListener(window, "pointermove", miss._preMove);
-  safeAddListener(window, "pointerup", miss._preUp);
+  safeAddListener(miss, "pointerdown", onDown);
+  safeAddListener(window, "pointermove", onMove);
+  safeAddListener(window, "pointerup", onUp);
 
   draw();
 }
 
 /* ---------------------------
-   Evaluation (mit Wegerkennung)
+   Evaluation
    --------------------------- */
-
 function startEvaluationMode(initialProj) {
-  if (!path || path.length < 2) return;
   playing = true;
-  segsInfo = computeSegments(path);
 
-  if (initialProj && typeof initialProj.along === "number") {
-    currentAlong = Math.max(0, Math.min(segsInfo.total, initialProj.along));
+  if (initialProj) {
+    currentAlong = initialProj.along;
     lastAlong = currentAlong;
     const pos = pointAtDistance(segsInfo, currentAlong);
-    if (miss) {
-      miss.style.left = (pos.x - missSize.w / 2) + "px";
-      miss.style.top = (pos.y - missSize.h / 2) + "px";
-    }
+    miss.style.left = (pos.x - missSize.w / 2) + "px";
+    miss.style.top = (pos.y - missSize.h / 2) + "px";
   } else {
     currentAlong = 0;
     lastAlong = 0;
-    const startP = pointAtDistance(segsInfo, 0);
-    if (miss) {
-      miss.style.left = (startP.x - missSize.w / 2) + "px";
-      miss.style.top = (startP.y - missSize.h / 2) + "px";
-    }
   }
 
-  if (miss) {
-    miss.style.touchAction = "none";
-    miss.style.pointerEvents = "auto";
-  }
+  miss.style.touchAction = "none";
+  miss.style.pointerEvents = "auto";
 
   function onDown(ev) {
+    if (freezeInput) return;
     ev.preventDefault();
     dragging = true;
-    if (miss) miss.classList.add("dragging");
-    try { if (miss && ev.pointerId != null) miss.setPointerCapture(ev.pointerId); } catch (e) {}
+    miss.classList.add("dragging");
+    try { miss.setPointerCapture(ev.pointerId); } catch (e) {}
   }
 
   async function onMove(ev) {
-    if (!dragging || !miss) return;
-    let x = ev.clientX;
-    let y = ev.clientY;
+    if (!dragging || freezeInput) return;
+
+    let x = ev.clientX, y = ev.clientY;
     x = Math.max(missSize.w / 2, Math.min(width - missSize.w / 2, x));
     y = Math.max(missSize.h / 2, Math.min(height - missSize.h / 2, y));
     miss.style.left = (x - missSize.w / 2) + "px";
@@ -661,85 +472,57 @@ function startEvaluationMode(initialProj) {
     const proj = projectPointOnPath(segsInfo, { x, y });
 
     if (proj.dist > getMaxDeviationPx()) {
-      // Immediately handle loss (will pause and show modal)
-      await handleLoss();
+      triggerLossCheckLoop();
       return;
     }
 
-    const jitter = 2.0;
-    if (proj.along >= lastAlong - jitter) {
+    if (proj.along >= lastAlong - 2) {
       currentAlong = proj.along;
       lastAlong = Math.max(lastAlong, currentAlong);
-    } else {
-      draw();
-      return;
     }
-
-    draw();
 
     if (currentAlong >= segsInfo.total - END_THRESHOLD) {
       dragging = false;
-      try { if (ev.pointerId != null) miss.releasePointerCapture(ev.pointerId); } catch (e) {}
-      if (miss) miss.classList.remove("dragging");
+      miss.classList.remove("dragging");
+      try { miss.releasePointerCapture(ev.pointerId); } catch (e) {}
       onSuccess();
     }
   }
 
-  async function onUp(ev) {
-    if (!dragging || !miss) return;
+  function onUp(ev) {
+    if (!dragging) return;
     dragging = false;
-    if (miss) miss.classList.remove("dragging");
-    try { if (ev.pointerId != null) miss.releasePointerCapture(ev.pointerId); } catch (e) {}
-    if (segsInfo && currentAlong >= segsInfo.total - END_THRESHOLD) {
-      onSuccess();
-    } else {
-      await handleLoss();
-    }
+    miss.classList.remove("dragging");
+    try { miss.releasePointerCapture(ev.pointerId); } catch (e) {}
   }
-
-  safeRemoveListener(miss, "pointerdown", miss._downHandler);
-  safeRemoveListener(window, "pointermove", miss._moveHandler);
-  safeRemoveListener(window, "pointerup", miss._upHandler);
 
   miss._downHandler = onDown;
   miss._moveHandler = onMove;
   miss._upHandler = onUp;
 
-  safeAddListener(miss, "pointerdown", miss._downHandler);
-  safeAddListener(window, "pointermove", miss._moveHandler);
-  safeAddListener(window, "pointerup", miss._upHandler);
+  safeAddListener(miss, "pointerdown", onDown);
+  safeAddListener(window, "pointermove", onMove);
+  safeAddListener(window, "pointerup", onUp);
 
   draw();
 }
-
 /* ---------------------------
    Erfolg / nächste Runde
    --------------------------- */
-
 function onSuccess() {
   flash("green");
   setTimeout(async () => {
     round++;
     if (roundNumEl) roundNumEl.textContent = round;
-    path = generatePathForRound(round);
-    segsInfo = computeSegments(path);
-    currentAlong = 0;
-    lastAlong = 0;
-    await animatePreview(path);
-    if (path && path.length > 0 && miss) {
-      const startP = path[0];
-      miss.style.left = (startP.x - missSize.w / 2) + "px";
-      miss.style.top = (startP.y - missSize.h / 2) + "px";
-    }
-    draw();
-    enablePrestartMode();
+
+    // Neue Runde mit Preview
+    await startCurrentRound(true);
   }, 250);
 }
 
 /* ---------------------------
-   Hilfsfunktionen
+   Flash
    --------------------------- */
-
 function flash(color) {
   if (!overlay) return;
   overlay.classList.add(color === "green" ? "greenFlash" : "redFlash");
@@ -749,38 +532,26 @@ function flash(color) {
 /* ---------------------------
    Start-Button
    --------------------------- */
-
 if (startBtn) {
   startBtn.addEventListener("click", async () => {
     const rect = safeGetRect(miss);
-    if (rect && rect.width) {
+    if (rect) {
       missSize.w = rect.width;
       missSize.h = rect.height;
     }
 
-    path = generatePathForRound(round);
-    segsInfo = computeSegments(path);
-
-    await animatePreview(path);
-    if (path && path.length > 0 && miss) {
-      const startP = path[0];
-      miss.style.left = (startP.x - missSize.w / 2) + "px";
-      miss.style.top = (startP.y - missSize.h / 2) + "px";
-    }
-    draw();
-    enablePrestartMode();
+    await startCurrentRound(true);
   });
 }
 
 /* ---------------------------
-   Miss image size initialization (wait for load)
+   Miss image size initialization
    --------------------------- */
-
 function initMissSizeFromImage() {
   if (!miss) return;
   function setSize() {
     const rect = safeGetRect(miss);
-    if (rect && rect.width) {
+    if (rect) {
       missSize.w = rect.width;
       missSize.h = rect.height;
     }
@@ -788,38 +559,86 @@ function initMissSizeFromImage() {
   if (miss.complete) {
     setSize();
   } else {
-    safeAddListener(miss, 'load', setSize, { once: true });
+    safeAddListener(miss, "load", setSize, { once: true });
     setTimeout(setSize, 500);
   }
 }
 initMissSizeFromImage();
 
 /* ---------------------------
-   Initialisierung Highscore + Startzustand
+   Debug: Safe‑Zone Toggle
    --------------------------- */
+(function createDebugSafeZoneToggle() {
+  if (!debug) return;
 
+  const wrapper = document.createElement("div");
+  wrapper.style.position = "fixed";
+  wrapper.style.top = "10px";
+  wrapper.style.right = "10px";
+  wrapper.style.zIndex = 100000;
+  wrapper.style.background = "rgba(0,0,0,0.45)";
+  wrapper.style.color = "#fff";
+  wrapper.style.padding = "6px 10px";
+  wrapper.style.borderRadius = "8px";
+  wrapper.style.fontFamily = "system-ui, sans-serif";
+  wrapper.style.fontSize = "13px";
+  wrapper.style.display = "flex";
+  wrapper.style.alignItems = "center";
+  wrapper.style.gap = "8px";
+
+  const cb = document.createElement("input");
+  cb.type = "checkbox";
+  cb.checked = showSafeZone;
+  cb.id = "safeZoneToggle";
+  cb.style.cursor = "pointer";
+
+  const label = document.createElement("label");
+  label.htmlFor = "safeZoneToggle";
+  label.textContent = "Safe‑Zone anzeigen";
+  label.style.cursor = "pointer";
+
+  cb.addEventListener("change", () => {
+    showSafeZone = cb.checked;
+    draw();
+  });
+
+  wrapper.appendChild(cb);
+  wrapper.appendChild(label);
+  document.body.appendChild(wrapper);
+})();
+
+/* ---------------------------
+   Highscore Init
+   --------------------------- */
 try {
-  if (typeof Highscore !== 'undefined' && Highscore && typeof Highscore.init === 'function') {
-    Highscore.init({ title: "Highscores", showButton: true, buttonText: "Highscores", attachTo: document.body });
+  if (typeof Highscore !== "undefined" && Highscore && typeof Highscore.init === "function") {
+    Highscore.init({
+      title: "Highscores",
+      showButton: true,
+      buttonText: "Highscores",
+      attachTo: document.body
+    });
   }
 } catch (e) {
   console.warn("Highscore init failed", e);
 }
 
-// Erzeuge ersten Pfad und Preview beim Laden
-(function initialSetup() {
+/* ---------------------------
+   Initial Setup
+   --------------------------- */
+(async function initialSetup() {
   path = generatePathForRound(round);
   segsInfo = computeSegments(path);
-  if (path && path.length > 0 && miss) {
-    const startP = path[0];
-    miss.style.left = (startP.x - missSize.w / 2) + "px";
-    miss.style.top = (startP.y - missSize.h / 2) + "px";
-  } else if (miss) {
-    const sx = Math.round(width / 2);
-    const sy = Math.round(height * START_Y_FACTOR);
-    miss.style.left = (sx - missSize.w / 2) + "px";
-    miss.style.top = (sy - missSize.h / 2) + "px";
-  }
-  draw();
+
+  const startP = path[0];
+  miss.style.left = (startP.x - missSize.w / 2) + "px";
+  miss.style.top = (startP.y - missSize.h / 2) + "px";
+
   updateLivesUI();
+
+  // Preview beim allerersten Start
+  await animatePreview(path);
+
+  enablePrestartMode();
+  draw();
 })();
