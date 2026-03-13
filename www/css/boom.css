@@ -1,0 +1,94 @@
+/* ------------------------------------------------------------
+   Grundlayout
+------------------------------------------------------------ */
+body {
+    margin: 0;
+    overflow: hidden;
+    background: #111;
+    font-family: Arial, sans-serif;
+    color: white;
+}
+
+#game-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+}
+
+/* ------------------------------------------------------------
+   Gegner
+------------------------------------------------------------ */
+.enemy {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+
+/* ------------------------------------------------------------
+   Treffer-/Schaden-Effekt
+------------------------------------------------------------ */
+.flash-red {
+    animation: flash 200ms ease-out;
+}
+
+@keyframes flash {
+    0% { background-color: rgba(255,0,0,0.6); }
+    100% { background-color: transparent; }
+}
+
+/* ------------------------------------------------------------
+   HUD (Leben, Runde, Score)
+------------------------------------------------------------ */
+#lives, #round, #score {
+    position: absolute;
+    top: 10px;
+    font-size: 19px;
+}
+
+#lives { left: 10px; }
+#round { left: 150px; }
+#score { right: 10px; }
+
+/* ------------------------------------------------------------
+   Overlays (Start, Runde, Game Over)
+------------------------------------------------------------ */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.85);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 32px;
+    z-index: 9999;
+}
+
+/* ------------------------------------------------------------
+   Buttons
+------------------------------------------------------------ */
+.overlay button {
+    padding: 12px 25px;
+    margin-top: 20px;
+    font-size: 22px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    background: #444;
+    color: white;
+    transition: background 0.2s, transform 0.1s;
+}
+
+.overlay button:hover {
+    background: #666;
+}
+
+.overlay button:active {
+    transform: scale(0.95);
+}
