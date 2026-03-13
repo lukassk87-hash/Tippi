@@ -324,7 +324,14 @@ async function startCurrentRound(withPreview = true) {
    Verlust‑Logik (Variante A1)
    --------------------------- */
 async function triggerLossCheckLoop() {
+
+  // --- FIX: verhindert mehrfachen Game-Over-Aufruf ---
+  if (lives === 0 || overlay.classList.contains("gameOverScreen")) {
+    return;
+  }
   if (lossInProgress) return;
+  // ---------------------------------------------------
+
   lossInProgress = true;
   freezeInput = true;
 
@@ -348,33 +355,34 @@ async function triggerLossCheckLoop() {
       lives = Math.max(0, lives - 1);
       updateLivesUI();
 
-// GAME OVER?
-if (lives === 0) {
-  overlay.classList.remove("redFlash");
-  freezeInput = true;
-  lossInProgress = false;
+      // GAME OVER?
+      if (lives === 0) {
+        overlay.classList.remove("redFlash");
+        freezeInput = true;
+        lossInProgress = false;
 
-  overlay.innerHTML = `
-    <div class="gameOverContainer">
-      <div class="gameOverTitle">GAME OVER</div>
-      <button id="backToMenuBtn" class="menuButton">Hauptmenü</button>
-    </div>
-  `;
-  overlay.classList.add("gameOverScreen");
+        overlay.innerHTML = `
+          <div class="gameOverContainer">
+            <div class="gameOverTitle">GAME OVER</div>
+            <button id="backToMenuBtn" class="menuButton">Hauptmenü</button>
+          </div>
+        `;
+        overlay.classList.add("gameOverScreen");
 
-  const btn = document.getElementById("backToMenuBtn");
-  if (btn) {
-    btn.addEventListener("click", () => {
-      window.location.href = "index.html";  // ← hier wird zum Hauptmenü geleitet
-    });
-  }
+        const btn = document.getElementById("backToMenuBtn");
+        if (btn) {
+          btn.addEventListener("click", () => {
+            window.location.href = "index.html";
+          });
+        }
 
-  playing = false;
-  prestartActive = false;
-  dragging = false;
+        playing = false;
+        prestartActive = false;
+        dragging = false;
 
-  return;
-}
+        return;
+      }
+
       // Kein Game Over → normal weiterspielen
       overlay.classList.remove("redFlash");
       freezeInput = false;
@@ -383,7 +391,6 @@ if (lives === 0) {
     }
   }
 }
-
 /* ---------------------------
    Prestart
    --------------------------- */
