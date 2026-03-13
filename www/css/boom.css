@@ -13,6 +13,7 @@ body {
     position: relative;
     width: 100vw;
     height: 100vh;
+    z-index: 1; /* Gegner anklickbar */
 }
 
 /* ------------------------------------------------------------
@@ -24,6 +25,7 @@ body {
     height: 50px;
     cursor: pointer;
     transition: transform 0.1s;
+    z-index: 2;
 }
 
 /* ------------------------------------------------------------
@@ -39,17 +41,31 @@ body {
 }
 
 /* ------------------------------------------------------------
-   HUD (Leben, Runde, Score)
+   HUD – drei Container untereinander, rechtsbündig
 ------------------------------------------------------------ */
-#lives, #round, #score {
-    position: absolute;
+#hud {
+    position: fixed;
     top: 10px;
-    font-size: 19px;
+    right: 10px;
+    z-index: 1000; /* unter Overlays */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
 }
 
-#lives { left: 10px; }
-#round { left: 150px; }
-#score { right: 10px; }
+.hud-row {
+    padding: 4px 10px;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    font-size: 15px;      /* kleiner */
+    border-radius: 5px;
+    white-space: nowrap;
+    text-align: right;
+    min-width: 120px;     /* kein Clipping */
+    box-sizing: border-box;
+    font-weight: 500;
+}
 
 /* ------------------------------------------------------------
    Overlays (Start, Runde, Game Over)
@@ -67,12 +83,10 @@ body {
     justify-content: center;
     align-items: center;
     font-size: 32px;
-    z-index: 9999;
+    z-index: 9000; /* über HUD */
 }
 
-/* ------------------------------------------------------------
-   Buttons
------------------------------------------------------------- */
+/* Buttons */
 .overlay button {
     padding: 12px 25px;
     margin-top: 20px;
@@ -90,5 +104,93 @@ body {
 }
 
 .overlay button:active {
+    transform: scale(0.95);
+}
+
+/* ------------------------------------------------------------
+   Highscore-Eingabedialog
+------------------------------------------------------------ */
+#hs-input {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.85);
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000; /* ganz oben */
+    color: white;
+    font-size: 28px;
+}
+
+#hs-input input {
+    margin-top: 20px;
+    padding: 12px 20px;
+    font-size: 22px;
+    border-radius: 8px;
+    border: none;
+    outline: none;
+    width: 250px;
+    text-align: center;
+}
+
+#hs-input button {
+    margin-top: 20px;
+    padding: 12px 25px;
+    font-size: 22px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    background: #4caf50;
+    color: white;
+    transition: background 0.2s, transform 0.1s;
+}
+
+#hs-input button:hover {
+    background: #66bb6a;
+}
+
+#hs-input button:active {
+    transform: scale(0.95);
+}
+
+/* ------------------------------------------------------------
+   Neues Game Over Menü (nach Highscore)
+------------------------------------------------------------ */
+#gameover-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.85);
+    display: none; /* wird erst nach Highscore angezeigt */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 32px;
+    z-index: 9500; /* unter Highscore, über HUD */
+}
+
+#gameover-menu button {
+    padding: 12px 25px;
+    margin-top: 20px;
+    font-size: 22px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    background: #444;
+    color: white;
+    transition: background 0.2s, transform 0.1s;
+}
+
+#gameover-menu button:hover {
+    background: #666;
+}
+
+#gameover-menu button:active {
     transform: scale(0.95);
 }
