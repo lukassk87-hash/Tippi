@@ -17,6 +17,17 @@
     </div>
   </div>
 
-  <script src="js/highscore.js"></script>
+  <!-- Highscore Engine -->
+  <script src="www/js/highscore.js"></script>
+
+  <!-- Highscore Rendering -->
+  <script>
+    // Sobald die Seite geladen ist → Highscores anzeigen
+    document.addEventListener("DOMContentLoaded", () => {
+      if (typeof renderHighscoreList === "function") {
+        renderHighscoreList();
+      }
+    });
+  </script>
 </body>
 </html>
