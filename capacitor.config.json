@@ -1,6 +1,6 @@
 {
-  "appId": "de.tippi.app",
-  "appName": "tippi",
+  "appId": "de.tico.app",
+  "appName": "Tico",
   "webDir": "www",
   "bundledWebRuntime": false
 }
