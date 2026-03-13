@@ -69,7 +69,7 @@ let round = 1;
 let missSize = { w: 80, h: 80 };
 let topQuarterY = 0;
 
-let debug = false;          // Safe‑Zone gekoppelt an debug
+let debug = false;
 let showSafeZone = debug;
 
 let prestartActive = false;
@@ -79,8 +79,10 @@ let dragging = false;
 let currentAlong = 0;
 let lastAlong = 0;
 
-let lossInProgress = false;     // verhindert parallele Fehlerbehandlung
-let freezeInput = false;        // verhindert Bewegung während Fehlerphase
+let lossInProgress = false;
+let freezeInput = false;
+
+let pendingGameOver = false;   // <-- NEU
 
 const START_Y_FACTOR = 0.18;
 const TARGET_Y_FACTOR = 0.78;
@@ -275,7 +277,8 @@ async function animatePreview(points) {
     segsInfo = computeSegments(points);
     const total = segsInfo.total;
 
-    const duration = Math.max(700, Math.min(2200, total * 0.45));
+    const duration = Math.max(1400, total * 0.90);
+
     const startTime = performance.now();
 
     function step(now) {
@@ -301,7 +304,7 @@ async function animatePreview(points) {
 }
 
 /* ---------------------------
-   startCurrentRound — WICHTIG!
+   startCurrentRound
    --------------------------- */
 async function startCurrentRound(withPreview = true) {
   path = generatePathForRound(round);
@@ -320,17 +323,14 @@ async function startCurrentRound(withPreview = true) {
   enablePrestartMode();
   draw();
 }
+
 /* ---------------------------
-   Verlust‑Logik (Variante A1)
+   Verlust‑Logik
    --------------------------- */
 async function triggerLossCheckLoop() {
 
-  // --- FIX: verhindert mehrfachen Game-Over-Aufruf ---
-  if (lives === 0 || overlay.classList.contains("gameOverScreen")) {
-    return;
-  }
+  if (lives === 0 || overlay.classList.contains("gameOverScreen")) return;
   if (lossInProgress) return;
-  // ---------------------------------------------------
 
   lossInProgress = true;
   freezeInput = true;
@@ -348,42 +348,21 @@ async function triggerLossCheckLoop() {
 
     const proj = projectPointOnPath(segsInfo, { x: midX, y: midY });
 
-    // Spieler wieder im erlaubten Bereich?
     if (proj.dist <= getMaxDeviationPx()) {
 
-      // Leben abziehen
       lives = Math.max(0, lives - 1);
       updateLivesUI();
 
-      // GAME OVER?
       if (lives === 0) {
+
+        pendingGameOver = true;   // <-- NEU
+
         overlay.classList.remove("redFlash");
         freezeInput = true;
         lossInProgress = false;
-
-        overlay.innerHTML = `
-          <div class="gameOverContainer">
-            <div class="gameOverTitle">GAME OVER</div>
-            <button id="backToMenuBtn" class="menuButton">Hauptmenü</button>
-          </div>
-        `;
-        overlay.classList.add("gameOverScreen");
-
-        const btn = document.getElementById("backToMenuBtn");
-        if (btn) {
-          btn.addEventListener("click", () => {
-            window.location.href = "index.html";
-          });
-        }
-
-        playing = false;
-        prestartActive = false;
-        dragging = false;
-
         return;
       }
 
-      // Kein Game Over → normal weiterspielen
       overlay.classList.remove("redFlash");
       freezeInput = false;
       lossInProgress = false;
@@ -391,6 +370,58 @@ async function triggerLossCheckLoop() {
     }
   }
 }
+
+/* ---------------------------
+   SYNCHRONER GAME OVER FIX
+   --------------------------- */
+window.addEventListener("pointerup", () => {
+  if (pendingGameOver) {
+    pendingGameOver = false;
+    runGameOver();
+  }
+});
+
+function runGameOver() {
+  const score = Math.max(0, round - 1);
+
+  try {
+    if (typeof checkForHighscore === "function" &&
+        checkForHighscore(score, "Tico sucht sein Zuhause")) {
+
+      const name = prompt(`Neuer Highscore! Runde ${score}. Dein Name:`);
+
+      if (name && typeof addHighscore === "function") {
+        addHighscore(name, score, "Tico sucht sein Zuhause");
+      }
+    }
+
+    if (typeof showHighscores === "function") {
+      showHighscores();
+    }
+  } catch (e) {
+    console.error("Highscore error:", e);
+  }
+
+  overlay.innerHTML = `
+    <div class="gameOverContainer">
+      <div class="gameOverTitle">GAME OVER</div>
+      <div class="gameOverScore">Runden: ${score}</div>
+      <button id="backToMenuBtn" class="menuButton">Hauptmenü</button>
+    </div>
+  `;
+  overlay.classList.add("gameOverScreen");
+
+// Button-Listener sicher setzen, auch wenn pointerup auf dem Button passiert ist
+setTimeout(() => {
+  const btn = document.getElementById("backToMenuBtn");
+  if (btn) {
+    btn.onclick = () => {
+      window.location.href = "index.html";
+    };
+  }
+}, 0);
+}
+
 /* ---------------------------
    Prestart
    --------------------------- */
@@ -544,6 +575,7 @@ function startEvaluationMode(initialProj) {
 
   draw();
 }
+
 /* ---------------------------
    Erfolg / nächste Runde
    --------------------------- */
@@ -553,7 +585,6 @@ function onSuccess() {
     round++;
     if (roundNumEl) roundNumEl.textContent = round;
 
-    // Neue Runde mit Preview
     await startCurrentRound(true);
   }, 250);
 }
@@ -674,9 +705,8 @@ try {
 
   updateLivesUI();
 
-  // Preview beim allerersten Start
   await animatePreview(path);
 
   enablePrestartMode();
   draw();
-})();
+})(); 
