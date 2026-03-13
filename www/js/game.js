@@ -1,9 +1,9 @@
 /* ELEMENTE & KONSTANTEN */
 const DEBUG = false;
 
-const IMG_START = "resources/start.jpg";
-const IMG_HIT   = "resources/hit.jpg";
-const IMG_MISS  = "resources/miss.jpg";
+const IMG_START = "resources/start.png";
+const IMG_HIT   = "resources/hit.png";
+const IMG_MISS  = "resources/miss.png";
 
 const SAFE_TOP = 75;
 const SAFE_BOTTOM = 75;
