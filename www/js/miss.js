@@ -341,10 +341,41 @@ async function triggerLossCheckLoop() {
 
     const proj = projectPointOnPath(segsInfo, { x: midX, y: midY });
 
+    // Spieler wieder im erlaubten Bereich?
     if (proj.dist <= getMaxDeviationPx()) {
+
+      // Leben abziehen
       lives = Math.max(0, lives - 1);
       updateLivesUI();
 
+// GAME OVER?
+if (lives === 0) {
+  overlay.classList.remove("redFlash");
+  freezeInput = true;
+  lossInProgress = false;
+
+  overlay.innerHTML = `
+    <div class="gameOverContainer">
+      <div class="gameOverTitle">GAME OVER</div>
+      <button id="backToMenuBtn" class="menuButton">Hauptmenü</button>
+    </div>
+  `;
+  overlay.classList.add("gameOverScreen");
+
+  const btn = document.getElementById("backToMenuBtn");
+  if (btn) {
+    btn.addEventListener("click", () => {
+      window.location.href = "index.html";  // ← hier wird zum Hauptmenü geleitet
+    });
+  }
+
+  playing = false;
+  prestartActive = false;
+  dragging = false;
+
+  return;
+}
+      // Kein Game Over → normal weiterspielen
       overlay.classList.remove("redFlash");
       freezeInput = false;
       lossInProgress = false;
