@@ -1,10 +1,10 @@
 // zu
 // Per-game limits: Miss -> top 3, andere Spiele größere Limits
-const DEFAULT_GAME_LIMIT = 50;
+const DEFAULT_GAME_LIMIT = 3;
 const GAME_LIMITS = {
   "Miss": 3,
-  "Tippi": 50,
-  "Ich tippe meinen Päcki": 50
+  "Tippi": 3,
+  "Ich tippe meinen Päcki": 3
 };
 
 function loadHighscores() {
