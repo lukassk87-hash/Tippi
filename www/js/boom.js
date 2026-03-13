@@ -12,27 +12,76 @@ const roundBox = document.getElementById("round");
 const scoreBox = document.getElementById("score");
 
 // ------------------------------------------------------------
-// Highscore-UI initialisieren
+// Highscore-Eingabedialog erzeugen
 // ------------------------------------------------------------
-try {
-    if (typeof Highscore !== "undefined" && Highscore && typeof Highscore.init === "function") {
-        Highscore.init({
-            title: "Boom – Highscores",
-            showButton: true,
-            buttonText: "Highscores",
-            attachTo: document.body
-        });
-    }
-} catch (e) {
-    console.warn("Highscore init failed", e);
+function createHighscoreInput() {
+    const box = document.createElement("div");
+    box.id = "hs-input";
+    box.className = "overlay";
+    box.style.display = "none";
+
+    box.innerHTML = `
+        <div>🎉 Neuer Highscore!</div>
+        <div>Dein Score: <b id="hs-score"></b></div>
+        <input id="hs-name" placeholder="Dein Name" maxlength="20">
+        <button id="hs-save">Speichern</button>
+    `;
+
+    document.body.appendChild(box);
+
+    document.getElementById("hs-save").addEventListener("click", () => {
+        const name = document.getElementById("hs-name").value.trim() || "Spieler";
+        const sc = Number(document.getElementById("hs-score").textContent);
+
+        addHighscore(name, sc, "Boom");
+
+        box.style.display = "none";
+
+        showGameOverMenu(sc);
+    });
 }
 
-// Overlays erzeugen
-createStartOverlay();
-createRoundOverlay();
-createGameOverOverlay();
+createHighscoreInput();
 
-updateUI();
+// ------------------------------------------------------------
+// Game Over Menü erzeugen
+// ------------------------------------------------------------
+function createGameOverMenu() {
+    const overlay = document.createElement("div");
+    overlay.id = "gameover-menu";
+    overlay.className = "overlay";
+    overlay.style.display = "none";
+
+    overlay.innerHTML = `
+        <div>💀 GAME OVER 💀</div>
+        <div id="final-score"></div>
+        <button id="restart-btn">🔄 Neustart</button>
+        <button id="menu-btn">🏠 Hauptmenü</button>
+    `;
+
+    document.body.appendChild(overlay);
+
+    document.getElementById("restart-btn").addEventListener("click", () => {
+        location.reload();
+    });
+
+    document.getElementById("menu-btn").addEventListener("click", () => {
+        window.location.href = "index.html";
+    });
+}
+
+createGameOverMenu();
+
+// ------------------------------------------------------------
+// Game Over Menü anzeigen
+// ------------------------------------------------------------
+function showGameOverMenu(sc) {
+    const overlay = document.getElementById("gameover-menu");
+    const finalScore = document.getElementById("final-score");
+
+    finalScore.textContent = "Dein Score: " + sc;
+    overlay.style.display = "flex";
+}
 
 // ------------------------------------------------------------
 // UI
@@ -87,25 +136,16 @@ function spawnEnemy(options = {}) {
 
     let clicked = false;
 
-    // --------------------------------------------------------
-    // Verlangsamte Geschwindigkeit (40 % + ±20 % Variation)
-    // --------------------------------------------------------
-    let baseSpeedX = (Math.random() * 4 - 2) * 0.4;
-    let baseSpeedY = (Math.random() * 4 - 2) * 0.4;
-
-    let variation = 0.8 + Math.random() * 0.4;
-
-    let speedX = baseSpeedX * variation;
-    let speedY = baseSpeedY * variation;
+    // Geschwindigkeit
+    let speedX = (Math.random() * 4 - 2) * 0.4;
+    let speedY = (Math.random() * 4 - 2) * 0.4;
 
     if (Math.abs(speedX) < 0.15) speedX = 0.15 * Math.sign(speedX || 1);
     if (Math.abs(speedY) < 0.15) speedY = 0.15 * Math.sign(speedY || 1);
 
     moveEnemy(enemy, speedX, speedY);
 
-    // --------------------------------------------------------
-    // Klick-Logik
-    // --------------------------------------------------------
+    // Klick
     enemy.addEventListener("click", () => {
         if (clicked) return;
         clicked = true;
@@ -121,27 +161,19 @@ function spawnEnemy(options = {}) {
             enemy.remove();
 
             // --------------------------------------------------------
-            // SPLIT-LOGIK nach deiner Regel
+            // SPLIT-LOGIK MIT 50% CHANCE AB GENERATION 3
             // --------------------------------------------------------
             if (gen < maxGen) {
                 let doSplit = true;
 
-                // Ab Generation 3 → nur 50 % Chance
                 if (gen >= 3) {
                     doSplit = Math.random() < 0.5;
                 }
 
                 if (doSplit) {
                     const childGen = gen + 1;
-
-                    spawnEnemy({
-                        generation: childGen,
-                        maxGeneration: maxGen
-                    });
-                    spawnEnemy({
-                        generation: childGen,
-                        maxGeneration: maxGen
-                    });
+                    spawnEnemy({ generation: childGen, maxGeneration: maxGen });
+                    spawnEnemy({ generation: childGen, maxGeneration: maxGen });
                 }
             }
 
@@ -149,9 +181,7 @@ function spawnEnemy(options = {}) {
         }, 500);
     });
 
-    // --------------------------------------------------------
-    // Zeitlimit für Explosion
-    // --------------------------------------------------------
+    // Explosion
     const timeLimit = 2000 + Math.random() * 3000;
 
     setTimeout(() => {
@@ -224,6 +254,8 @@ function createStartOverlay() {
     });
 }
 
+createStartOverlay();
+
 // ------------------------------------------------------------
 // RUNDEN-OVERLAY
 // ------------------------------------------------------------
@@ -246,6 +278,8 @@ function createRoundOverlay() {
     });
 }
 
+createRoundOverlay();
+
 function showRoundOverlay() {
     const overlay = document.getElementById("round-overlay");
     const text = document.getElementById("round-text");
@@ -258,49 +292,10 @@ function showRoundOverlay() {
 }
 
 // ------------------------------------------------------------
-// GAME OVER OVERLAY
-// ------------------------------------------------------------
-function createGameOverOverlay() {
-    const overlay = document.createElement("div");
-    overlay.id = "gameover-overlay";
-    overlay.className = "overlay";
-    overlay.style.display = "none";
-
-    overlay.innerHTML = `
-        <div>💀 GAME OVER 💀</div>
-        <div id="final-score"></div>
-        <button id="restart-btn">🔄 Neustart</button>
-        <button id="menu-btn">🏠 Hauptmenü</button>
-    `;
-
-    document.body.appendChild(overlay);
-
-    document.getElementById("restart-btn").addEventListener("click", () => {
-        location.reload();
-    });
-
-    document.getElementById("menu-btn").addEventListener("click", () => {
-        window.location.href = "index.html";
-    });
-}
-
-// ------------------------------------------------------------
 // SPIELENDE
 // ------------------------------------------------------------
 function endGame() {
-
-    // Highscore-Eingabe starten
-    try {
-        if (typeof Highscore !== "undefined" && Highscore && typeof Highscore.showInput === "function") {
-            Highscore.showInput(score);
-        }
-    } catch (e) {
-        console.warn("Highscore input failed", e);
-    }
-
-    const overlay = document.getElementById("gameover-overlay");
-    const finalScore = document.getElementById("final-score");
-
-    finalScore.textContent = "Dein Score: " + score;
-    overlay.style.display = "flex";
+    const hsBox = document.getElementById("hs-input");
+    document.getElementById("hs-score").textContent = score;
+    hsBox.style.display = "flex";
 }
