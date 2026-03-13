@@ -11,6 +11,22 @@ const livesBox = document.getElementById("lives");
 const roundBox = document.getElementById("round");
 const scoreBox = document.getElementById("score");
 
+// ------------------------------------------------------------
+// Highscore-UI initialisieren
+// ------------------------------------------------------------
+try {
+    if (typeof Highscore !== "undefined" && Highscore && typeof Highscore.init === "function") {
+        Highscore.init({
+            title: "Boom – Highscores",
+            showButton: true,
+            buttonText: "Highscores",
+            attachTo: document.body
+        });
+    }
+} catch (e) {
+    console.warn("Highscore init failed", e);
+}
+
 // Overlays erzeugen
 createStartOverlay();
 createRoundOverlay();
@@ -31,10 +47,8 @@ function updateUI() {
 // Rundenlogik
 // ------------------------------------------------------------
 function startRound() {
-    // Runde n → maxGeneration = n + 1
     const maxGeneration = round + 1;
 
-    // Erster Gegner der Runde: Generation 1
     spawnEnemy({
         generation: 1,
         maxGeneration: maxGeneration
@@ -79,7 +93,7 @@ function spawnEnemy(options = {}) {
     let baseSpeedX = (Math.random() * 4 - 2) * 0.4;
     let baseSpeedY = (Math.random() * 4 - 2) * 0.4;
 
-    let variation = 0.8 + Math.random() * 0.4; // 0.8–1.2
+    let variation = 0.8 + Math.random() * 0.4;
 
     let speedX = baseSpeedX * variation;
     let speedY = baseSpeedY * variation;
@@ -109,7 +123,6 @@ function spawnEnemy(options = {}) {
             // --------------------------------------------------------
             // SPLIT-LOGIK nach deiner Regel
             // --------------------------------------------------------
-            // Darf dieser Gegner überhaupt noch splitten?
             if (gen < maxGen) {
                 let doSplit = true;
 
@@ -275,12 +288,14 @@ function createGameOverOverlay() {
 // SPIELENDE
 // ------------------------------------------------------------
 function endGame() {
+
+    // Highscore-Eingabe starten
     try {
-        if (typeof addHighscore === "function") {
-            addHighscore("Spieler", score, "Miss");
+        if (typeof Highscore !== "undefined" && Highscore && typeof Highscore.showInput === "function") {
+            Highscore.showInput(score);
         }
     } catch (e) {
-        console.error("Highscore Fehler:", e);
+        console.warn("Highscore input failed", e);
     }
 
     const overlay = document.getElementById("gameover-overlay");
