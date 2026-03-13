@@ -1,12 +1,12 @@
 document.addEventListener("DOMContentLoaded", () => {
 
-  const PARTS = {
-    "Linkes Auge": [34,44],
-    "Rechtes Auge": [36,37,46,47],
-    "Nase": [45,46,54,55,56],
-    "Zunge": [65,66,75,76,85,86],
-    "Linkes Ohr": [43,53,63],
-    "Rechtes Ohr": [48,58]
+ const PARTS = {
+    "Linkes Auge": [33,34,43,44],
+    "Rechtes Auge": [37,38,46,47,48],
+    "Nase": [45,46,55,56],
+    "Zunge": [64,65,66,74,75,76],
+    "Linkes Ohr": [12,13,14,22,23],
+    "Rechtes Ohr": [17,18,19,28,29,39]
   };
 
   const PART_NAMES = Object.keys(PARTS);
