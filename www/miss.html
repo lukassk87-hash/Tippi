@@ -1,24 +1,39 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Miss Pfad</title>
-  <link rel="stylesheet" href="css/miss.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tico sucht sein Zuhause</title>
+  <link rel="stylesheet" href="www/css/miss.css">
 </head>
+
 <body>
 
-<div id="game">
-  <canvas id="gameCanvas"></canvas>
-  <img id="miss" src="resources/miss.png" alt="Miss">
-  <div id="overlay"></div>
+  <div id="game">
 
-  <div id="ui">
-    <button id="startBtn">Start</button>
-    <div id="roundInfo">Runde: <span id="roundNum">1</span></div>
+    <!-- Canvas -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Miss (draggable) -->
+    <img id="miss" src="resources/miss.png" alt="Miss">
+
+    <!-- Flash + GameOver Overlay -->
+    <div id="overlay"></div>
+
+    <!-- Highscore Overlay (eigener Layer!) -->
+    <div id="highscoreOverlay"></div>
+
+    <!-- UI unten -->
+    <div id="ui">
+      <button id="startBtn">Start</button>
+<button id="menuBtn">Menü</button>
+      <div id="roundInfo">Runde: <span id="roundNum">1</span></div>
+    </div>
+
   </div>
-</div>
-<script src="js/highscore.js"></script>
-<script src="js/miss.js"></script>
+
+  <script src="js/highscore.js"></script>
+  <script src="js/miss.js"></script>
+
 </body>
 </html>
