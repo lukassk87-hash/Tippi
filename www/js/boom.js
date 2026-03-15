@@ -33,7 +33,7 @@ function createHighscoreInput() {
         const name = document.getElementById("hs-name").value.trim() || "Spieler";
         const sc = Number(document.getElementById("hs-score").textContent);
 
-        addHighscore(name, sc, "Boom");
+        addHighscore(name, sc, "Tico wird sauer!!");
 
         box.style.display = "none";
 
@@ -242,7 +242,7 @@ function createStartOverlay() {
     overlay.className = "overlay";
 
     overlay.innerHTML = `
-        <div>🐹 Tico wird sauer 😡! – Start</div>
+        <div>Tico wird sauer 😡!</div>
         <button id="start-btn">Spiel starten</button>
     `;
 
