@@ -188,10 +188,10 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const score = round;
       // Prompt must be triggered from user gesture context; ensure we call prompt synchronously
-      if (typeof checkForHighscore === "function" && checkForHighscore(score, "Ich tippe meinen Päcki")) {
-        const name = prompt(`Neuer Highscore für "Ich tippe meinen Päcki"! Runde ${score}. Dein Name:`);
+      if (typeof checkForHighscore === "function" && checkForHighscore(score, "Ich tippe meinen Tico")) {
+        const name = prompt(`Neuer Highscore für "Ich tippe meinen Tico"! Runde ${score}. Dein Name:`);
         if (name && typeof addHighscore === "function") {
-          addHighscore(name, score, "Ich tippe meinen Päcki");
+          addHighscore(name, score, "Ich tippe meinen Tico");
         }
       }
       if (typeof showHighscores === "function") showHighscores();
