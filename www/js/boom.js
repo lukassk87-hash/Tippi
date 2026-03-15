@@ -294,3 +294,8 @@ function showRoundOverlay() {
 // ------------------------------------------------------------
 // SPIELENDE
 // ------------------------------------------------------------
+function endGame() {
+    const hsBox = document.getElementById("hs-input");
+    document.getElementById("hs-score").textContent = score;
+    hsBox.style.display = "flex";
+}
