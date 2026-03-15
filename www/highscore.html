@@ -3,29 +3,27 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Tico – Highscores</title>
-  <link rel="stylesheet" href="css/style.css">
+  <title>Tippi – Highscores</title>
+  <link rel="stylesheet" href="css/highscore.css">
 </head>
 <body>
-  <div id="highscorePage" style="max-width:820px;margin:18px auto;padding:12px;color:#eee;">
+  <main id="highscorePage" class="container">
     <h1>Highscores</h1>
 
-    <div id="highscoreList" style="font-size:16px;line-height:1.5;"></div>
+    <div id="highscoreList" aria-live="polite" class="highscore-list"></div>
 
     <div style="margin-top:18px;">
-      <button class="menuBtn" onclick="location.href='index.html'">Zurück zum Menü</button>
+      <button type="button" class="menuBtn" onclick="location.href='index.html'">Zurück zum Menü</button>
     </div>
-  </div>
+  </main>
 
-  <!-- Highscore Engine -->
-  <script src="js/highscore.js"></script>
-
-  <!-- Highscore Rendering -->
+  <script src="www/js/highscore.js"></script>
   <script>
-    // Sobald die Seite geladen ist → Highscores anzeigen
     document.addEventListener("DOMContentLoaded", () => {
       if (typeof renderHighscoreList === "function") {
         renderHighscoreList();
+      } else {
+        console.warn("renderHighscoreList() nicht gefunden.");
       }
     });
   </script>
