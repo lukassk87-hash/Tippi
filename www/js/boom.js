@@ -2,9 +2,9 @@ let lives = 3;
 let round = 1;
 let score = 0;
 
-const enemyImg = "resources/evil.png";
-const boomImg = "resources/boom.png";
-const hitImg = "resources/hit.png";
+const enemyImg = "www/resources/evil.png";
+const boomImg = "www/resources/boom.png";
+const hitImg = "www/resources/hit.png";
 
 const container = document.getElementById("game-container");
 const livesBox = document.getElementById("lives");
@@ -166,13 +166,25 @@ function spawnEnemy(options = {}) {
         const maxGen = Number(enemy.dataset.maxGeneration);
 
         setTimeout(() => {
+// Ersetze den SPLIT-Block komplett (in spawnEnemy(), nach enemy.remove()):
+
             enemy.remove();
 
+            // --------------------------------------------------------
+            // SPLIT-LOGIK - ABSTUENDE CHANCEN
+            // --------------------------------------------------------
             if (gen < maxGen) {
-                let doSplit = true;
+                let splitChance = 1.0;  // 100% Standard
+
                 if (gen >= 3) {
-                    doSplit = Math.random() < 0.5;
+                    if (gen === 3) splitChance = 0.5;     // 50%
+                    else if (gen === 4) splitChance = 0.25;  // 25%
+                    else if (gen === 5) splitChance = 0.125; // 12.5%
+                    else if (gen >= 6) splitChance = 0.1;    // 10%
                 }
+
+                let doSplit = Math.random() < splitChance;
+
                 if (doSplit) {
                     const childGen = gen + 1;
                     spawnEnemy({ generation: childGen, maxGeneration: maxGen });
