@@ -1,0 +1,328 @@
+/* High Contrast Tippi Highscores — mit visueller Darstellung von Per-Game Limits
+   Orientierung: Nutzer-Code (Per-game limits) — zeigt Top-3 Hervorhebung,
+   Kategorie-Badges mit Limit-Anzeige und klare, kontrastreiche Lesbarkeit.
+*/
+
+/* Farb- und Design-Token */
+:root{
+  --bg-1: #fbefe6;
+  --bg-2: #fff6f0;
+  --panel: #fff6f0;
+  --text: #1f1209;
+  --muted: #5a3f2a;
+  --accent: #e64a00;
+  --accent-2: #ffb400;
+  --accent-3: #ff3f6b;
+  --glass: rgba(255,255,255,0.94);
+  --shadow-soft: 0 14px 36px rgba(31,18,9,0.12);
+  --shadow-strong: 0 28px 72px rgba(31,18,9,0.18);
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+  --max-width: 820px;
+  --ui-gap: 14px;
+  --mono: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --contrast-border: rgba(31,18,9,0.10);
+  --focus: rgba(255,180,60,0.28);
+}
+
+/* Reset / Grundlayout */
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body{
+  margin: 0;
+  font-family: var(--mono);
+  background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 100%);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  display: flex;
+  justify-content: center;
+  padding: 28px 16px;
+  line-height: 1.45;
+}
+
+/* Hauptcontainer */
+#highscorePage{
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 18px auto;
+  padding: 22px;
+  background: linear-gradient(180deg, var(--panel), #fff6f0);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-strong);
+  border: 1px solid var(--contrast-border);
+  color: var(--text);
+}
+
+/* Header */
+#highscorePage h1{
+  margin: 0 0 8px 0;
+  font-size: 30px;
+  font-weight: 900;
+  letter-spacing: 0.2px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--text);
+}
+
+/* Dekoratives Icon links vom Titel */
+#highscorePage h1::before{
+  content: "";
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  flex: 0 0 48px;
+  background: radial-gradient(circle at 30% 28%, #fff 0 8%, var(--accent-2) 9% 30%, var(--accent) 31% 100%);
+  box-shadow: 0 10px 22px rgba(230,80,20,0.12), inset 0 -6px 12px rgba(0,0,0,0.06);
+  border: 2px solid rgba(0,0,0,0.04);
+}
+
+/* Subheader */
+#highscorePage p{
+  margin: 6px 0 14px 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* Highscore-Liste */
+#highscoreList{
+  display: grid;
+  gap: 14px;
+  margin-top: 8px;
+  font-size: 16px;
+}
+
+/* ---------------------------
+   Score-Block (Kategorie)
+   - data-limit attribute zeigt das Limit an (z.B. data-limit="3")
+   - .category enthält Titel + Limit-Badge
+   --------------------------- */
+.score-block{
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,250,246,0.99));
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: var(--shadow-soft);
+  border: 1px solid rgba(31,18,9,0.06);
+}
+
+/* Kategorie-Header: Titel + Limit-Badge + optionale "Top N" Info */
+.score-block .category{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  justify-content: space-between;
+}
+.score-block .category .left {
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.score-block .category h2{
+  margin: 0;
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--text);
+}
+
+/* Limit-Badge: zeigt das pro-game Limit (z.B. "Top 3") */
+.score-block .category .limit-badge{
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--accent-2), var(--accent));
+  color: #fff;
+  font-weight: 900;
+  box-shadow: 0 8px 18px rgba(255,180,60,0.12);
+  border: 1px solid rgba(0,0,0,0.04);
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+}
+
+/* Wenn data-limit vorhanden, zeige Badge automatisch via CSS (falls JS setzt class) */
+/* Fallback: falls JS nicht setzt, du kannst serverseitig/data-attribute nutzen:
+   <section class="score-block" data-limit="3"> ... */
+.score-block[data-limit="3"] .category .limit-badge::after { content: "Top 3"; }
+.score-block[data-limit="5"] .category .limit-badge::after { content: "Top 5"; }
+.score-block[data-limit="10"] .category .limit-badge::after { content: "Top 10"; }
+
+/* Optional: wenn kein data-limit, zeige generischen Badge */
+.score-block:not([data-limit]) .category .limit-badge::after { content: "Top"; }
+
+/* Einzelne Score-Zeile */
+.score-row{
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border-radius: 12px;
+  transition: transform 160ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 160ms ease;
+  background: linear-gradient(180deg, #fff 0%, #fffaf6 100%);
+  border: 1px solid rgba(31,18,9,0.05);
+}
+.score-row + .score-row{ margin-top: 8px; }
+
+/* Rang-Badge */
+.score-rank{
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  display: inline-grid;
+  place-items: center;
+  font-weight: 900;
+  color: #fff;
+  background: linear-gradient(180deg, var(--accent), #c93b00);
+  box-shadow: 0 14px 36px rgba(230,80,20,0.14);
+  font-size: 17px;
+  border: 1px solid rgba(0,0,0,0.06);
+}
+
+/* Spieler-Infos */
+.score-meta{
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.score-name{
+  font-weight: 900;
+  font-size: 16px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.score-sub{
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Punktzahl */
+.score-value{
+  font-weight: 900;
+  font-size: 18px;
+  color: #0f0a06;
+  min-width: 92px;
+  text-align: right;
+  padding-left: 8px;
+}
+
+/* Top-3 Hervorhebung: spezielle Farben für Platz 1-3 */
+.score-row.top-1 .score-rank{
+  background: linear-gradient(180deg, #ffd54f, #ffb400);
+  color: #2b1700;
+  box-shadow: 0 16px 40px rgba(255,180,60,0.18);
+  border: 1px solid rgba(0,0,0,0.06);
+}
+.score-row.top-2 .score-rank{
+  background: linear-gradient(180deg, #c0c0c0, #9a9a9a);
+  color: #1f1f1f;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+}
+.score-row.top-3 .score-rank{
+  background: linear-gradient(180deg, #cd7f32, #a65a2a);
+  color: #fff;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.10);
+}
+
+/* Wenn ein Spiel nur Top-3 gespeichert wird, mache die Zeilen kompakter */
+.score-block[data-limit="3"] .score-row{
+  padding: 10px;
+  grid-template-columns: 48px 1fr auto;
+}
+.score-block[data-limit="3"] .score-rank{ width:48px; height:48px; font-size:15px; }
+
+/* Hover-Effekt */
+.score-row:hover{
+  transform: translateY(-6px);
+  box-shadow: 0 32px 80px rgba(31,18,9,0.14);
+}
+
+/* Leerer Zustand */
+.empty{
+  padding: 16px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,250,246,0.96));
+  color: var(--muted);
+  text-align: center;
+  box-shadow: var(--shadow-soft);
+  border: 1px solid rgba(31,18,9,0.04);
+}
+
+/* Buttons */
+.menuBtn{
+  display: inline-block;
+  margin-top: 16px;
+  padding: 12px 20px;
+  font-size: 15px;
+  font-weight: 900;
+  color: #fff;
+  background: linear-gradient(180deg, var(--accent), #c93b00);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 18px 44px rgba(230,80,20,0.16);
+  transition: transform 160ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 160ms ease;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+.menuBtn:hover{ transform: translateY(-3px); box-shadow: var(--shadow-strong); }
+.menuBtn:active{ transform: translateY(0); box-shadow: 0 10px 22px rgba(31,18,9,0.08); }
+
+/* Kleine Aktions-Buttons */
+.icon-btn{
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: inline-grid;
+  place-items: center;
+  background: rgba(31,18,9,0.06);
+  border: 1px solid rgba(31,18,9,0.06);
+  cursor: pointer;
+}
+.icon-btn:hover{ background: rgba(31,18,9,0.09); }
+
+/* Responsive */
+@media (max-width: 640px){
+  #highscorePage{ padding: 14px; }
+  #highscorePage h1{ font-size: 22px; }
+  .score-row{ grid-template-columns: 44px 1fr auto; padding: 8px; }
+  .score-rank{ width: 44px; height: 44px; font-size: 14px; border-radius: 10px; }
+  .score-value{ font-size: 16px; min-width: 64px; }
+  .menuBtn{ width: 100%; text-align: center; padding: 12px; border-radius: 10px; }
+}
+
+/* Fokus-Styles für Zugänglichkeit */
+.menuBtn:focus, .icon-btn:focus, .score-row:focus-within{
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+/* Einblend-Animation */
+#highscoreList .score-block, #highscoreList .score-row{
+  animation: fadeUp 360ms cubic-bezier(0.2,0.9,0.2,1);
+  transform-origin: center top;
+}
+@keyframes fadeUp{
+  from{ opacity: 0; transform: translateY(-8px) scale(0.995); }
+  to  { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ---------------------------
+   Hinweise zur Integration (kurz)
+   - JS sollte beim Rendern pro Kategorie <section class="score-block" data-limit="N"> setzen.
+   - Jede score-row erhält zusätzlich die Klasse top-1/top-2/top-3 je nach Rang.
+   - Die .limit-badge kann statisch im HTML stehen oder per JS befüllt werden.
+   Beispiel HTML (JS generiert):
+   <section class="score-block" data-limit="3">
+     <div class="category">
+       <div class="left"><h2>Tippi</h2></div>
+       <div class="limit-badge"></div>
+     </div>
+     <div class="score-row top-1"> ... </div>
+   </section>
+   --------------------------- */
