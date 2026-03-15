@@ -33,7 +33,7 @@ function createHighscoreInput() {
         const name = document.getElementById("hs-name").value.trim() || "Spieler";
         const sc = Number(document.getElementById("hs-score").textContent);
 
-        addHighscore(name, sc, "Tico wird sauer!!");
+        addHighscore(name, sc, "Tico wird sauer");
 
         box.style.display = "none";
 
@@ -112,8 +112,8 @@ function checkRoundEnd() {
     }
 }
 
-// ------------------------------------------------------------
-// Gegner erzeugen
+// // ------------------------------------------------------------
+// Gegner erzeugen - SYNTAX FIX
 // ------------------------------------------------------------
 function spawnEnemy(options = {}) {
     const generation = options.generation || 1;
@@ -136,14 +136,22 @@ function spawnEnemy(options = {}) {
 
     let clicked = false;
 
-    // Geschwindigkeit
+    // Geschwindigkeit - SYNTAX FIX!
     let speedX = (Math.random() * 4 - 2) * 0.4;
     let speedY = (Math.random() * 4 - 2) * 0.4;
 
-    if (Math.abs(speedX) < 0.15) speedX = 0.15 * Math.sign(speedX || 1);
-    if (Math.abs(speedY) < 0.15) speedY = 0.15 * Math.sign(speedY || 1);
+    // FIX: Korrekte Mindestgeschwindigkeit
+    if (Math.abs(speedX) < 0.15) {
+        speedX = (speedX >= 0 ? 0.15 : -0.15);
+    }
+    if (Math.abs(speedY) < 0.15) {
+        speedY = (speedY >= 0 ? 0.15 : -0.15);
+    }
 
-    moveEnemy(enemy, speedX, speedY);
+    enemy.dataset.speedX = speedX;
+    enemy.dataset.speedY = speedY;
+
+    moveEnemy(enemy);
 
     // Klick
     enemy.addEventListener("click", () => {
@@ -160,16 +168,11 @@ function spawnEnemy(options = {}) {
         setTimeout(() => {
             enemy.remove();
 
-            // --------------------------------------------------------
-            // SPLIT-LOGIK MIT 50% CHANCE AB GENERATION 3
-            // --------------------------------------------------------
             if (gen < maxGen) {
                 let doSplit = true;
-
                 if (gen >= 3) {
                     doSplit = Math.random() < 0.5;
                 }
-
                 if (doSplit) {
                     const childGen = gen + 1;
                     spawnEnemy({ generation: childGen, maxGeneration: maxGen });
@@ -183,21 +186,16 @@ function spawnEnemy(options = {}) {
 
     // Explosion
     const timeLimit = 2000 + Math.random() * 3000;
-
     setTimeout(() => {
         if (clicked) return;
-
         enemy.src = boomImg;
         flashRed();
         lives--;
-
         updateUI();
-
         setTimeout(() => {
             enemy.remove();
             checkRoundEnd();
         }, 500);
-
         if (lives <= 0) {
             endGame();
         }
@@ -205,20 +203,28 @@ function spawnEnemy(options = {}) {
 }
 
 // ------------------------------------------------------------
-// Gegnerbewegung
+// Gegnerbewegung - STABLE VERSION
 // ------------------------------------------------------------
-function moveEnemy(enemy, speedX, speedY) {
+function moveEnemy(enemy) {
     function step() {
         if (!document.body.contains(enemy)) return;
 
-        let x = enemy.offsetLeft + speedX;
-        let y = enemy.offsetTop + speedY;
+        let speedX = parseFloat(enemy.dataset.speedX) || 0.2;
+        let speedY = parseFloat(enemy.dataset.speedY) || 0.2;
+
+        let currentLeft = parseFloat(enemy.style.left) || 0;
+        let currentTop = parseFloat(enemy.style.top) || 0;
+
+        let x = currentLeft + speedX;
+        let y = currentTop + speedY;
 
         if (x < 0 || x > window.innerWidth - 60) speedX *= -1;
         if (y < 0 || y > window.innerHeight - 60) speedY *= -1;
 
-        enemy.style.left = (enemy.offsetLeft + speedX) + "px";
-        enemy.style.top = (enemy.offsetTop + speedY) + "px";
+        enemy.dataset.speedX = speedX;
+        enemy.dataset.speedY = speedY;
+        enemy.style.left = x + "px";
+        enemy.style.top = y + "px";
 
         requestAnimationFrame(step);
     }
@@ -242,7 +248,7 @@ function createStartOverlay() {
     overlay.className = "overlay";
 
     overlay.innerHTML = `
-        <div>Tico wird sauer 😡!</div>
+        <div>🐹 Tico wird sauer 😡! – Start</div>
         <button id="start-btn">Spiel starten</button>
     `;
 
