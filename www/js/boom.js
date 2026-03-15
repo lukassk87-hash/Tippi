@@ -2,9 +2,9 @@ let lives = 3;
 let round = 1;
 let score = 0;
 
-const enemyImg = "www/resources/evil.png";
-const boomImg = "www/resources/boom.png";
-const hitImg = "www/resources/hit.png";
+const enemyImg = "resources/evil.png";
+const boomImg = "resources/boom.png";
+const hitImg = "resources/hit.png";
 
 const container = document.getElementById("game-container");
 const livesBox = document.getElementById("lives");
