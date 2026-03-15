@@ -2,9 +2,9 @@ let lives = 3;
 let round = 1;
 let score = 0;
 
-const enemyImg = "resources/evil.png";
-const boomImg = "resources/boom.png";
-const hitImg = "resources/hit.png";
+const enemyImg = "www/resources/evil.png";
+const boomImg = "www/resources/boom.png";
+const hitImg = "www/resources/hit.png";
 
 const container = document.getElementById("game-container");
 const livesBox = document.getElementById("lives");
@@ -33,7 +33,7 @@ function createHighscoreInput() {
         const name = document.getElementById("hs-name").value.trim() || "Spieler";
         const sc = Number(document.getElementById("hs-score").textContent);
 
-        addHighscore(name, sc, "Tico wird sauer");
+        addHighscore(name, sc, "Boom");
 
         box.style.display = "none";
 
@@ -296,6 +296,6 @@ function showRoundOverlay() {
 // ------------------------------------------------------------
 function endGame() {
     const hsBox = document.getElementById("hs-input");
-    document.getElementById("hs-score").textContent = score;
-    hsBox.style.display = "flex";
+ document.getElementById("hs-score").textContent = score;
+    hsBox.style.display = "flex";  
 }
