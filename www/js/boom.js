@@ -2,9 +2,10 @@ let lives = 3;
 let round = 1;
 let score = 0;
 
-const enemyImg = "resources/evil.png";
-const boomImg = "resources/boom.png";
-const hitImg = "resources/hit.png";
+// ------------------------------------------------------------
+// VIDEO-QUELLEN
+// ------------------------------------------------------------
+const enemyVideo = "resources/evil2.mp4";
 
 const container = document.getElementById("game-container");
 const livesBox = document.getElementById("lives");
@@ -36,7 +37,6 @@ function createHighscoreInput() {
         addHighscore(name, sc, "Tico wird sauer");
 
         box.style.display = "none";
-
         showGameOverMenu(sc);
     });
 }
@@ -53,7 +53,7 @@ function createGameOverMenu() {
     overlay.style.display = "none";
 
     overlay.innerHTML = `
-        <div>💀 GAME OVER 💀</div>
+        <div>GAME OVER</div>
         <div id="final-score"></div>
         <button id="restart-btn">🔄 Neustart</button>
         <button id="menu-btn">🏠 Hauptmenü</button>
@@ -112,22 +112,30 @@ function checkRoundEnd() {
     }
 }
 
-// // ------------------------------------------------------------
-// Gegner erzeugen - SYNTAX FIX
+// ------------------------------------------------------------
+// Gegner erzeugen – VIDEO + PNG (hit/boom)
 // ------------------------------------------------------------
 function spawnEnemy(options = {}) {
     const generation = options.generation || 1;
     const maxGeneration = options.maxGeneration || 2;
 
-    const enemy = document.createElement("img");
-    enemy.src = enemyImg;
+    const enemy = document.createElement("div");
     enemy.classList.add("enemy");
+
+    // Start-Skin = Video
+    const vid = document.createElement("video");
+    vid.src = enemyVideo;
+    vid.autoplay = true;
+    vid.loop = true;
+    vid.muted = true;
+    vid.playsInline = true;
+    enemy.appendChild(vid);
 
     enemy.dataset.generation = String(generation);
     enemy.dataset.maxGeneration = String(maxGeneration);
 
-    const maxX = window.innerWidth - 60;
-    const maxY = window.innerHeight - 60;
+    const maxX = window.innerWidth - 75;
+    const maxY = window.innerHeight - 75;
 
     enemy.style.left = Math.random() * maxX + "px";
     enemy.style.top = Math.random() * maxY + "px";
@@ -136,56 +144,53 @@ function spawnEnemy(options = {}) {
 
     let clicked = false;
 
-    // Geschwindigkeit - SYNTAX FIX!
+    // Geschwindigkeit
     let speedX = (Math.random() * 4 - 2) * 0.4;
     let speedY = (Math.random() * 4 - 2) * 0.4;
 
-    // FIX: Korrekte Mindestgeschwindigkeit
-    if (Math.abs(speedX) < 0.15) {
-        speedX = (speedX >= 0 ? 0.15 : -0.15);
-    }
-    if (Math.abs(speedY) < 0.15) {
-        speedY = (speedY >= 0 ? 0.15 : -0.15);
-    }
+    if (Math.abs(speedX) < 0.15) speedX = speedX >= 0 ? 0.15 : -0.15;
+    if (Math.abs(speedY) < 0.15) speedY = speedY >= 0 ? 0.15 : -0.15;
 
     enemy.dataset.speedX = speedX;
     enemy.dataset.speedY = speedY;
 
     moveEnemy(enemy);
 
-    // Klick
+    // --------------------------------------------------------
+    // KLICK
+    // --------------------------------------------------------
     enemy.addEventListener("click", () => {
         if (clicked) return;
         clicked = true;
 
-        enemy.src = hitImg;
         score += 100;
         updateUI();
+
+        // Video entfernen → Treffer-PNG
+        if (enemy.contains(vid)) enemy.removeChild(vid);
+
+        const img = document.createElement("img");
+        img.src = "resources/hit.png";
+        enemy.appendChild(img);
 
         const gen = Number(enemy.dataset.generation);
         const maxGen = Number(enemy.dataset.maxGeneration);
 
         setTimeout(() => {
-// Ersetze den SPLIT-Block komplett (in spawnEnemy(), nach enemy.remove()):
-
             enemy.remove();
 
-            // --------------------------------------------------------
-            // SPLIT-LOGIK - ABSTUENDE CHANCEN
-            // --------------------------------------------------------
+            // Split-Logik
             if (gen < maxGen) {
-                let splitChance = 1.0;  // 100% Standard
+                let splitChance = 1.0;
 
                 if (gen >= 3) {
-                    if (gen === 3) splitChance = 0.5;     // 50%
-                    else if (gen === 4) splitChance = 0.25;  // 25%
-                    else if (gen === 5) splitChance = 0.125; // 12.5%
-                    else if (gen >= 6) splitChance = 0.1;    // 10%
+                    if (gen === 3) splitChance = 0.5;
+                    else if (gen === 4) splitChance = 0.4;
+                    else if (gen === 5) splitChance = 0.3;
+                    else if (gen >= 6) splitChance = 0.15;
                 }
 
-                let doSplit = Math.random() < splitChance;
-
-                if (doSplit) {
+                if (Math.random() < splitChance) {
                     const childGen = gen + 1;
                     spawnEnemy({ generation: childGen, maxGeneration: maxGen });
                     spawnEnemy({ generation: childGen, maxGeneration: maxGen });
@@ -196,45 +201,55 @@ function spawnEnemy(options = {}) {
         }, 500);
     });
 
-    // Explosion
+    // --------------------------------------------------------
+    // Explosion (wenn nicht geklickt)
+    // --------------------------------------------------------
     const timeLimit = 2000 + Math.random() * 3000;
+
     setTimeout(() => {
         if (clicked) return;
-        enemy.src = boomImg;
+
+        if (enemy.contains(vid)) enemy.removeChild(vid);
+
+        const img = document.createElement("img");
+        img.src = "resources/boom.png";
+        enemy.appendChild(img);
+
         flashRed();
         lives--;
         updateUI();
+
         setTimeout(() => {
             enemy.remove();
             checkRoundEnd();
-        }, 500);
-        if (lives <= 0) {
-            endGame();
-        }
+        }, 600);
+
+        if (lives <= 0) endGame();
     }, timeLimit);
 }
 
 // ------------------------------------------------------------
-// Gegnerbewegung - STABLE VERSION
+// Gegnerbewegung
 // ------------------------------------------------------------
 function moveEnemy(enemy) {
     function step() {
         if (!document.body.contains(enemy)) return;
 
-        let speedX = parseFloat(enemy.dataset.speedX) || 0.2;
-        let speedY = parseFloat(enemy.dataset.speedY) || 0.2;
+        let speedX = parseFloat(enemy.dataset.speedX);
+        let speedY = parseFloat(enemy.dataset.speedY);
 
-        let currentLeft = parseFloat(enemy.style.left) || 0;
-        let currentTop = parseFloat(enemy.style.top) || 0;
+        let x = parseFloat(enemy.style.left);
+        let y = parseFloat(enemy.style.top);
 
-        let x = currentLeft + speedX;
-        let y = currentTop + speedY;
+        x += speedX;
+        y += speedY;
 
-        if (x < 0 || x > window.innerWidth - 60) speedX *= -1;
-        if (y < 0 || y > window.innerHeight - 60) speedY *= -1;
+        if (x < 0 || x > window.innerWidth - 75) speedX *= -1;
+        if (y < 0 || y > window.innerHeight - 75) speedY *= -1;
 
         enemy.dataset.speedX = speedX;
         enemy.dataset.speedY = speedY;
+
         enemy.style.left = x + "px";
         enemy.style.top = y + "px";
 
@@ -314,6 +329,6 @@ function showRoundOverlay() {
 // ------------------------------------------------------------
 function endGame() {
     const hsBox = document.getElementById("hs-input");
- document.getElementById("hs-score").textContent = score;
-    hsBox.style.display = "flex";  
+    document.getElementById("hs-score").textContent = score;
+    hsBox.style.display = "flex";
 }
