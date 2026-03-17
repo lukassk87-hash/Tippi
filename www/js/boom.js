@@ -130,9 +130,10 @@ function spawnEnemy(options = {}) {
     const enemy = document.createElement("div");
     enemy.classList.add("enemy");
 
-    // --------------------------------------------------------
-    // GLOBAL GELADENES VIDEO KOPIEREN (WICHTIG!)
-    // --------------------------------------------------------
+    // Enemy unsichtbar starten, um Platzhalter-Frame zu vermeiden
+    enemy.style.display = "none";
+
+    // Video aus globalem Template klonen
     const vid = videoTemplate.cloneNode(true);
     enemy.appendChild(vid);
 
@@ -146,6 +147,11 @@ function spawnEnemy(options = {}) {
     enemy.style.top = Math.random() * maxY + "px";
 
     container.appendChild(enemy);
+
+    // Nach kurzer Zeit sichtbar machen (verhindert grauen Platzhalter)
+    setTimeout(() => {
+        enemy.style.display = "block";
+    }, 50);
 
     let clicked = false;
 
@@ -183,6 +189,7 @@ function spawnEnemy(options = {}) {
         setTimeout(() => {
             enemy.remove();
 
+            // Split-Logik
             if (gen < maxGen) {
                 let splitChance = 1.0;
 
@@ -204,6 +211,32 @@ function spawnEnemy(options = {}) {
         }, 500);
     });
 
+    // --------------------------------------------------------
+    // Explosion (wenn nicht geklickt)
+    // --------------------------------------------------------
+    const timeLimit = 2000 + Math.random() * 3000;
+
+    setTimeout(() => {
+        if (clicked) return;
+
+        if (enemy.contains(vid)) enemy.removeChild(vid);
+
+        const img = document.createElement("img");
+        img.src = "resources/boom.png";
+        enemy.appendChild(img);
+
+        flashRed();
+        lives--;
+        updateUI();
+
+        setTimeout(() => {
+            enemy.remove();
+            checkRoundEnd();
+        }, 600);
+
+        if (lives <= 0) endGame();
+    }, timeLimit);
+}
     // --------------------------------------------------------
     // Explosion (wenn nicht geklickt)
     // --------------------------------------------------------
