@@ -5,7 +5,7 @@ let score = 0;
 // ------------------------------------------------------------
 // VIDEO-QUELLEN
 // ------------------------------------------------------------
-const enemyVideo = "resources/evil2.mp4";
+const enemyVideo = "resources/evil.mp4";
 
 const container = document.getElementById("game-container");
 const livesBox = document.getElementById("lives");
