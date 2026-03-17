@@ -3,10 +3,18 @@ let round = 1;
 let score = 0;
 
 // ------------------------------------------------------------
-// VIDEO-QUELLEN
+// VIDEO GLOBAL EINMAL LADEN (WICHTIG!)
 // ------------------------------------------------------------
-const enemyVideo = "resources/evil.mp4";
+const videoTemplate = document.createElement("video");
+videoTemplate.src = "resources/evil.mp4";
+videoTemplate.autoplay = true;
+videoTemplate.loop = true;
+videoTemplate.muted = true;
+videoTemplate.playsInline = true;
 
+// ------------------------------------------------------------
+// DOM ELEMENTE
+// ------------------------------------------------------------
 const container = document.getElementById("game-container");
 const livesBox = document.getElementById("lives");
 const roundBox = document.getElementById("round");
@@ -122,13 +130,10 @@ function spawnEnemy(options = {}) {
     const enemy = document.createElement("div");
     enemy.classList.add("enemy");
 
-    // Start-Skin = Video
-    const vid = document.createElement("video");
-    vid.src = enemyVideo;
-    vid.autoplay = true;
-    vid.loop = true;
-    vid.muted = true;
-    vid.playsInline = true;
+    // --------------------------------------------------------
+    // GLOBAL GELADENES VIDEO KOPIEREN (WICHTIG!)
+    // --------------------------------------------------------
+    const vid = videoTemplate.cloneNode(true);
     enemy.appendChild(vid);
 
     enemy.dataset.generation = String(generation);
@@ -166,7 +171,6 @@ function spawnEnemy(options = {}) {
         score += 100;
         updateUI();
 
-        // Video entfernen → Treffer-PNG
         if (enemy.contains(vid)) enemy.removeChild(vid);
 
         const img = document.createElement("img");
@@ -179,7 +183,6 @@ function spawnEnemy(options = {}) {
         setTimeout(() => {
             enemy.remove();
 
-            // Split-Logik
             if (gen < maxGen) {
                 let splitChance = 1.0;
 
