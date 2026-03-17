@@ -3,7 +3,7 @@ let round = 1;
 let score = 0;
 
 // ------------------------------------------------------------
-// VIDEO GLOBAL EINMAL LADEN (WICHTIG!)
+// VIDEO GLOBAL EINMAL LADEN
 // ------------------------------------------------------------
 const videoTemplate = document.createElement("video");
 videoTemplate.src = "resources/evil.mp4";
@@ -130,7 +130,7 @@ function spawnEnemy(options = {}) {
     const enemy = document.createElement("div");
     enemy.classList.add("enemy");
 
-    // Enemy unsichtbar starten, um Platzhalter-Frame zu vermeiden
+    // Enemy unsichtbar starten (verhindert grauen Platzhalter)
     enemy.style.display = "none";
 
     // Video aus globalem Template klonen
@@ -148,7 +148,7 @@ function spawnEnemy(options = {}) {
 
     container.appendChild(enemy);
 
-    // Nach kurzer Zeit sichtbar machen (verhindert grauen Platzhalter)
+    // Nach kurzer Zeit sichtbar machen
     setTimeout(() => {
         enemy.style.display = "block";
     }, 50);
@@ -211,32 +211,6 @@ function spawnEnemy(options = {}) {
         }, 500);
     });
 
-    // --------------------------------------------------------
-    // Explosion (wenn nicht geklickt)
-    // --------------------------------------------------------
-    const timeLimit = 2000 + Math.random() * 3000;
-
-    setTimeout(() => {
-        if (clicked) return;
-
-        if (enemy.contains(vid)) enemy.removeChild(vid);
-
-        const img = document.createElement("img");
-        img.src = "resources/boom.png";
-        enemy.appendChild(img);
-
-        flashRed();
-        lives--;
-        updateUI();
-
-        setTimeout(() => {
-            enemy.remove();
-            checkRoundEnd();
-        }, 600);
-
-        if (lives <= 0) endGame();
-    }, timeLimit);
-}
     // --------------------------------------------------------
     // Explosion (wenn nicht geklickt)
     // --------------------------------------------------------
