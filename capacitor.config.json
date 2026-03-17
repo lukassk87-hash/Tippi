@@ -2,5 +2,10 @@
   "appId": "de.tico.app",
   "appName": "Tico",
   "webDir": "www",
-  "bundledWebRuntime": false
+  "bundledWebRuntime": false,
+  "assets": {
+    "include": [
+      "resources/*.mp4"
+    ]
+  }
 }
