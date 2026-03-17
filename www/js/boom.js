@@ -151,7 +151,7 @@ function spawnEnemy(options = {}) {
     // Nach kurzer Zeit sichtbar machen
     setTimeout(() => {
         enemy.style.display = "block";
-    }, 50);
+    }, 100);
 
     let clicked = false;
 
@@ -214,7 +214,7 @@ function spawnEnemy(options = {}) {
     // --------------------------------------------------------
     // Explosion (wenn nicht geklickt)
     // --------------------------------------------------------
-    const timeLimit = 2000 + Math.random() * 3000;
+    const timeLimit = 2100 + Math.random() * 3000;
 
     setTimeout(() => {
         if (clicked) return;
