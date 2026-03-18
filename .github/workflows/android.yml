@@ -39,18 +39,19 @@ jobs:
       - name: Install Capacitor Assets
         run: npm install --save-dev @capacitor/assets
 
-      - name: Dummy build
+      # Vite-Build → erzeugt /dist
+      - name: Build Web App
         run: npm run build
 
-      # Android-Plattform zuerst erzeugen
+      # Android-Plattform erzeugen
       - name: Add Android platform
         run: npx cap add android
 
-      # Icons erst jetzt generieren
+      # Icons generieren
       - name: Generate Android Icons
         run: npx capacitor-assets generate --android
 
-      # Jetzt synchronisieren
+      # Sync → kopiert /dist nach Android
       - name: Sync Capacitor
         run: npx cap sync android
 
@@ -61,9 +62,8 @@ jobs:
         working-directory: android
         run: ./gradlew assembleDebug --stacktrace --quiet
 
-      # Nur die APK hochladen – nicht den ganzen Build-Ordner
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: tico.apk
+          name: stopmotion.apk
           path: android/app/build/outputs/apk/debug/*.apk
