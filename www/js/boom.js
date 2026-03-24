@@ -1,4 +1,4 @@
-let lives = 3;
+let lives = 5;
 let round = 1;
 let score = 0;
 
