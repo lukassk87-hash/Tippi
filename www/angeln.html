@@ -7,7 +7,6 @@
   <link rel="stylesheet" href="css/angeln.css">
 </head>
 <body>
-<body>
   <main class="angeln-spiel">
     <section class="wurf-box">
       <div class="phasen-kopf">
@@ -82,7 +81,8 @@
         </div>
       </div>
 
-      <button id="startButton">Wurf starten</button>
+      <button class="startbutton" id="startButton">Wurf starten</button>
+      <button class="startbutton" onclick="window.location.href='index.html'">Hauptmenü</button>
 
       <div class="debug-panel" id="debugPanel">
         <h3>Debugmodus</h3>
@@ -104,7 +104,7 @@
       </div>
     </section>
   </main>
-    <script src="js/highscore.js"></script>
+  <script src="js/highscore.js"></script>
   <script src="js/angeln.js"></script>
 </body>
 </html>
