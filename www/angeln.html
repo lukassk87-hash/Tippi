@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tico angelt!</title>
+  <link rel="stylesheet" href="www/css/angeln.css">
+</head>
+<body>
+<body>
+  <main class="angeln-spiel">
+    <section class="wurf-box">
+      <div class="phasen-kopf">
+        <div><span id="phaseName">Angel auswerfen</span></div>
+      </div>
+
+      <div class="startbereich" id="startbereich">
+        <div class="spieler-info" id="spielerInfo"></div>
+      </div>
+
+      <div class="phase" id="phase1">
+        <div class="phasenbild-rahmen bild-phase1">
+          <img src="www/resources/fishes/start.jpg" alt="Angel auswerfen">
+        </div>
+        <div class="balken-bereich">
+          <div class="balken">
+            <div class="optimal-bereich"></div>
+            <div class="marker" id="marker"></div>
+          </div>
+          <div class="skala">
+            <span>0%</span>
+            <span>75% optimal</span>
+            <span>100%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="phase versteckt" id="phase2">
+        <div class="phasenbild-rahmen bild-phase2">
+          <img src="www/resources/fishes/warten.jpg" alt="Köder beobachten">
+        </div>
+        <div class="kreis-bereich">
+          <div class="kreis-rahmen" id="koederFlaeche">
+            <div class="ziel-ring"></div>
+            <div class="ziel-kreis"></div>
+            <div class="koeder-kreis" id="koederKreis"></div>
+          </div>
+          <div class="kreis-skala">
+            <span>Start: 100%</span>
+            <span>Optimal: 10%</span>
+            <span>Fehlschlag ab &gt; 5% Abweichung</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="phase versteckt" id="phase3">
+        <div class="phasenbild-rahmen bild-phase3">
+          <img src="www/resources/fishes/biss.jpg" alt="Fisch beißt an">
+        </div>
+        <div class="fang-kreuz">
+          <button class="fang-button fang-top" data-key="top" disabled>↑</button>
+          <button class="fang-button fang-left" data-key="left" disabled>←</button>
+          <button class="fang-button fang-center" data-key="center" disabled>●</button>
+          <button class="fang-button fang-right" data-key="right" disabled>→</button>
+          <button class="fang-button fang-bottom" data-key="bottom" disabled>↓</button>
+        </div>
+        <div class="kreis-skala">
+          <span>6 Signale</span>
+          <span>Ab 300 ms langsamer</span>
+          <span>Ab 500 ms Fang gescheitert</span>
+        </div>
+      </div>
+
+      <div class="phase finish-screen versteckt" id="finishScreen">
+        <div class="fisch-karte">
+          <div class="fisch-bild-rahmen bild-phase-finish">
+            <img id="finishFischBild" src="www/resources/fishes/clownfisch.jpg" alt="Gefangener Fisch">
+          </div>
+          <p><strong>Fisch:</strong> <span id="finishFischName">-</span></p>
+          <p><strong>Länge:</strong> <span id="finishLaenge">-</span></p>
+          <p><strong>Gewicht:</strong> <span id="finishGewicht">-</span></p>
+        </div>
+      </div>
+
+      <button id="startButton">Wurf starten</button>
+
+      <div class="debug-panel" id="debugPanel">
+        <h3>Debugmodus</h3>
+        <p><strong>Status:</strong> <span id="status">Bereit</span></p>
+        <p><strong>Phase 1 Position:</strong> <span id="position">-</span></p>
+        <p><strong>Phase 1 Abweichung:</strong> <span id="abweichung">-</span></p>
+        <p><strong>Phase 1 Score:</strong> <span id="score">-</span></p>
+        <hr>
+        <p><strong>Phase 2 Größe:</strong> <span id="koederGroesse">-</span></p>
+        <p><strong>Phase 2 Abweichung:</strong> <span id="koederAbweichung">-</span></p>
+        <p><strong>Phase 2 Score:</strong> <span id="koederScore">-</span></p>
+        <hr>
+        <p><strong>Phase 3 Ø Zeit pro Klick:</strong> <span id="fangZeit">-</span></p>
+        <p><strong>Phase 3 Score:</strong> <span id="fangScore">-</span></p>
+        <p><strong>Gesamtscore:</strong> <span id="gesamtScore">-</span></p>
+        <p><strong>Fisch:</strong> <span id="debugFischName">-</span></p>
+        <p><strong>Fischlänge:</strong> <span id="fischLaenge">-</span></p>
+        <p><strong>Fischgewicht:</strong> <span id="fischGewicht">-</span></p>
+      </div>
+    </section>
+  </main>
+    <script src="www/js/highscore.js"></script>
+  <script src="www/js/angeln.js"></script>
+</body>
+</html>
