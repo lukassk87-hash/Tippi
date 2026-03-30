@@ -526,4 +526,4 @@ window.addEventListener("resize", keepEnemiesInsideBounds);
 // ------------------------------------------------------------
 // Init
 // ------------------------------------------------------------
-updateUI(); 
+updateUI();
