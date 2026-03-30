@@ -1,7 +1,9 @@
-const DEFAULT_GAME_LIMIT = 3
-  "Tippi": 3,
-  "Ich tippe meinen Päcki": 3,
-  "Tico geht angeln": 3
+const DEFAULT_GAME_LIMIT = 10;
+const GAME_LIMITS = {
+  "Miss": 3,
+  "Tippi": 10,
+  "Ich tippe meinen Päcki": 10,
+  "Tico geht angeln": 10
 };
 
 function loadHighscores() {
@@ -25,13 +27,12 @@ function normalizeGameName(game) {
 }
 
 function normalizeHighscoreEntry(entry) {
-  const game = normalizeGameName(entry?.game);
   const score = Number(entry?.score || 0);
 
   return {
     name: String(entry?.name || "Spieler"),
     score: Number.isFinite(score) ? score : 0,
-    game,
+    game: normalizeGameName(entry?.game),
     fishName: String(entry?.fishName || ""),
     fishLength: String(entry?.fishLength || ""),
     fishWeight: String(entry?.fishWeight || "")
@@ -70,7 +71,7 @@ function enforcePerGameLimits(list) {
   return result;
 }
 
-function addHighscore(name, score, game = "Tippi", extra = {}) {
+function addHighscore(name, score, game = "Tippi", extra = null) {
   const nm = String(name || "Spieler").trim() || "Spieler";
   const sc = Number(score || 0);
   const gm = normalizeGameName(game || "Tippi");
@@ -80,14 +81,17 @@ function addHighscore(name, score, game = "Tippi", extra = {}) {
     return;
   }
 
-  const entry = normalizeHighscoreEntry({
+  const entry = {
     name: nm,
     score: sc,
-    game: gm,
-    fishName: extra?.fishName || "",
-    fishLength: extra?.fishLength || "",
-    fishWeight: extra?.fishWeight || ""
-  });
+    game: gm
+  };
+
+  if (gm === "Tico geht angeln" && extra) {
+    entry.fishName = String(extra.fishName || "");
+    entry.fishLength = String(extra.fishLength || "");
+    entry.fishWeight = String(extra.fishWeight || "");
+  }
 
   const list = loadHighscores();
   list.push(entry);
@@ -135,7 +139,6 @@ function renderHighscoreList() {
   }
 
   const groups = {};
-
   for (const rawEntry of list) {
     const entry = normalizeHighscoreEntry(rawEntry);
     const game = normalizeGameName(entry.game);
@@ -164,9 +167,7 @@ function renderHighscoreList() {
       continue;
     }
 
-    html += `<section class="highscore-game">`;
-    html += `<h3>${escapeHtml(g)}</h3>`;
-    html += `<ol>`;
+    html += `<section class="highscore-game"><h3>${escapeHtml(g)}</h3><ol>`;
 
     for (const e of entries) {
       if (g === "Tico geht angeln") {
@@ -190,8 +191,7 @@ function renderHighscoreList() {
       }
     }
 
-    html += `</ol>`;
-    html += `</section>`;
+    html += `</ol></section>`;
   }
 
   for (const game in groups) {
@@ -205,9 +205,7 @@ function renderHighscoreList() {
       continue;
     }
 
-    html += `<section class="highscore-game">`;
-    html += `<h3>${escapeHtml(game)}</h3>`;
-    html += `<ol>`;
+    html += `<section class="highscore-game"><h3>${escapeHtml(game)}</h3><ol>`;
 
     for (const e of entries) {
       html += `
@@ -218,8 +216,7 @@ function renderHighscoreList() {
       `;
     }
 
-    html += `</ol>`;
-    html += `</section>`;
+    html += `</ol></section>`;
   }
 
   box.innerHTML = html;
