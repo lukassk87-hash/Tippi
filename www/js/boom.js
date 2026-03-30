@@ -12,7 +12,7 @@ let animationFrameId = null;
 // VIDEO GLOBAL EINMAL LADEN
 // ------------------------------------------------------------
 const videoTemplate = document.createElement("video");
-videoTemplate.src = "resources/evil2.mp4";
+videoTemplate.src = "resources/evil.mp4";
 videoTemplate.autoplay = true;
 videoTemplate.loop = true;
 videoTemplate.muted = true;
