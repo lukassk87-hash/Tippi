@@ -4,23 +4,23 @@ document.body.classList.toggle('debug-mode', DEBUG_MODE);
 const FISCH_DATEN = [
   {
     name: 'Bramster',
-    bild: 'resources/fishes/bramster.jpg'
+    bild: 'resources/fishes/Bramster.jpg'
   },
   {
     name: 'Clownsterfisch',
-    bild: 'resources/fishes/clownsterfisch.jpg'
+    bild: 'resources/fishes/Clownsterfisch.jpg'
   },
   {
     name: 'Hamsterhai',
-    bild: 'resources/fishes/hamsterhai.jpg'
+    bild: 'resources/fishes/Hamsterhai.jpg'
   },
   {
     name: 'Harelle',
-    bild: 'resources/fishes/bramster.jpg'
+    bild: 'resources/fishes/Harelle.jpg'
   },
   {
     name: 'Goldhamsterfisch',
-    bild: 'resources/fishes/goldhamsterfisch.jpg'
+    bild: 'resources/fishes/Goldhamsterfisch.jpg'
   },
   {
     name: 'Hunder',
