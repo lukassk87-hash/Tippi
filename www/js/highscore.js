@@ -1,16 +1,14 @@
-// zu
-// Per-game limits: Miss -> top 3, andere Spiele größere Limits
-const DEFAULT_GAME_LIMIT = 3;
-const GAME_LIMITS = {
-  "Miss": 3,
+const DEFAULT_GAME_LIMIT = 3
   "Tippi": 3,
-  "Ich tippe meinen Päcki": 3
+  "Ich tippe meinen Päcki": 3,
+  "Tico geht angeln": 3
 };
 
 function loadHighscores() {
   try {
     const data = localStorage.getItem("highscores");
-    return data ? JSON.parse(data) : [];
+    const parsed = data ? JSON.parse(data) : [];
+    return Array.isArray(parsed) ? parsed.map(normalizeHighscoreEntry) : [];
   } catch (e) {
     console.warn("Highscore load failed, resetting:", e);
     localStorage.removeItem("highscores");
@@ -22,36 +20,58 @@ function saveHighscores(list) {
   localStorage.setItem("highscores", JSON.stringify(list));
 }
 
-// Hilfsfunktion: normalisiere Spielnamen konsistent
 function normalizeGameName(game) {
   return String(game || "").trim();
 }
 
-// Gruppiert, sortiert und kürzt jede Spielgruppe auf das jeweilige Limit.
+function normalizeHighscoreEntry(entry) {
+  const game = normalizeGameName(entry?.game);
+  const score = Number(entry?.score || 0);
+
+  return {
+    name: String(entry?.name || "Spieler"),
+    score: Number.isFinite(score) ? score : 0,
+    game,
+    fishName: String(entry?.fishName || ""),
+    fishLength: String(entry?.fishLength || ""),
+    fishWeight: String(entry?.fishWeight || "")
+  };
+}
+
+function getGameLimit(game) {
+  return Object.prototype.hasOwnProperty.call(GAME_LIMITS, game)
+    ? GAME_LIMITS[game]
+    : DEFAULT_GAME_LIMIT;
+}
+
 function enforcePerGameLimits(list) {
   const groups = {};
-  for (const e of list) {
-    const game = normalizeGameName(e.game);
-    if (!groups[game]) groups[game] = [];
-    groups[game].push({ name: String(e.name || ""), score: Number(e.score || 0), game });
+
+  for (const rawEntry of list) {
+    const entry = normalizeHighscoreEntry(rawEntry);
+    const game = entry.game;
+
+    if (!groups[game]) {
+      groups[game] = [];
+    }
+
+    groups[game].push(entry);
   }
 
   const result = [];
+
   for (const game in groups) {
     groups[game].sort((a, b) => b.score - a.score);
-    const limit = GAME_LIMITS.hasOwnProperty(game) ? GAME_LIMITS[game] : DEFAULT_GAME_LIMIT;
-    const kept = groups[game].slice(0, limit);
-    result.push(...kept);
+    const limit = getGameLimit(game);
+    result.push(...groups[game].slice(0, limit));
   }
 
   result.sort((a, b) => b.score - a.score);
   return result;
 }
 
-// Fügt neuen Highscore hinzu und speichert danach die gekürzte Liste
-function addHighscore(name, score, game = "Tippi") {
-  // einfache Validierung
-  const nm = String(name || "Spieler");
+function addHighscore(name, score, game = "Tippi", extra = {}) {
+  const nm = String(name || "Spieler").trim() || "Spieler";
   const sc = Number(score || 0);
   const gm = normalizeGameName(game || "Tippi");
 
@@ -60,18 +80,24 @@ function addHighscore(name, score, game = "Tippi") {
     return;
   }
 
+  const entry = normalizeHighscoreEntry({
+    name: nm,
+    score: sc,
+    game: gm,
+    fishName: extra?.fishName || "",
+    fishLength: extra?.fishLength || "",
+    fishWeight: extra?.fishWeight || ""
+  });
+
   const list = loadHighscores();
-  list.push({ name: nm, score: sc, game: gm });
+  list.push(entry);
 
   const trimmed = enforcePerGameLimits(list);
-
-  // optional globales Limit
   const globalLimit = 200;
   const finalList = trimmed.slice(0, globalLimit);
 
   saveHighscores(finalList);
 
-  // Ein Render-Aufruf reicht; rufe die vorhandene Funktion(en) falls vorhanden auf
   if (typeof showHighscores === "function") {
     showHighscores();
   } else if (typeof renderHighscoreList === "function") {
@@ -79,65 +105,135 @@ function addHighscore(name, score, game = "Tippi") {
   }
 }
 
-// Prüft, ob ein Score in die Top-N des Spiels kommt
 function checkForHighscore(score, game = "Tippi") {
   const sc = Number(score || 0);
   const gm = normalizeGameName(game || "Tippi");
 
-  const list = loadHighscores().filter(e => normalizeGameName(e.game) === gm);
-  list.sort((a, b) => b.score - a.score);
-  const limit = GAME_LIMITS.hasOwnProperty(gm) ? GAME_LIMITS[gm] : DEFAULT_GAME_LIMIT;
-  if (list.length < limit) return true;
+  if (!Number.isFinite(sc)) {
+    return false;
+  }
+
+  const list = loadHighscores()
+    .filter((entry) => normalizeGameName(entry.game) === gm)
+    .sort((a, b) => b.score - a.score);
+
+  const limit = getGameLimit(gm);
+
+  if (list.length < limit) {
+    return true;
+  }
+
   return sc > list[limit - 1].score;
 }
 
-// Render-Funktionen (Beispielimplementierung, anpassbar)
 function renderHighscoreList() {
   const list = loadHighscores();
   const box = document.getElementById("highscoreList");
-  if (!box) return;
 
-  const groups = {};
-  for (const e of list) {
-    const g = normalizeGameName(e.game);
-    if (!groups[g]) groups[g] = [];
-    groups[g].push(e);
+  if (!box) {
+    return;
   }
 
-  // Reihenfolge der Spiele, die standardmäßig angezeigt werden sollen
-  const gamesToShow = ["Tippi", "Ich tippe meinen Päcki", "Miss"];
+  const groups = {};
+
+  for (const rawEntry of list) {
+    const entry = normalizeHighscoreEntry(rawEntry);
+    const game = normalizeGameName(entry.game);
+
+    if (!groups[game]) {
+      groups[game] = [];
+    }
+
+    groups[game].push(entry);
+  }
+
+  const gamesToShow = [
+    "Tippi",
+    "Ich tippe meinen Päcki",
+    "Miss",
+    "Tico geht angeln"
+  ];
 
   let html = "";
 
   for (const game of gamesToShow) {
     const g = normalizeGameName(game);
     const entries = groups[g] ? groups[g].slice().sort((a, b) => b.score - a.score) : [];
-    if (entries.length === 0) continue;
 
-    html += `<section class="highscore-game"><h3>${escapeHtml(g)}</h3><ol>`;
-    for (const e of entries) {
-      html += `<li><span class="hs-name">${escapeHtml(String(e.name))}</span> <span class="hs-score">${Number(e.score)}</span></li>`;
+    if (entries.length === 0) {
+      continue;
     }
-    html += `</ol></section>`;
+
+    html += `<section class="highscore-game">`;
+    html += `<h3>${escapeHtml(g)}</h3>`;
+    html += `<ol>`;
+
+    for (const e of entries) {
+      if (g === "Tico geht angeln") {
+        html += `
+          <li>
+            <span class="hs-name">${escapeHtml(e.name)}</span>
+            <span class="hs-meta">
+              ${escapeHtml(e.fishName || "-")}
+              · ${escapeHtml(e.fishLength || "-")}
+              · ${escapeHtml(e.fishWeight || "-")}
+            </span>
+          </li>
+        `;
+      } else {
+        html += `
+          <li>
+            <span class="hs-name">${escapeHtml(e.name)}</span>
+            <span class="hs-score">${Number(e.score)}</span>
+          </li>
+        `;
+      }
+    }
+
+    html += `</ol>`;
+    html += `</section>`;
   }
 
-  // Falls es noch andere Spiele gibt, die nicht in gamesToShow sind, zeige sie ebenfalls
   for (const game in groups) {
-    if (gamesToShow.includes(game)) continue;
-    const entries = groups[game].slice().sort((a, b) => b.score - a.score);
-    if (entries.length === 0) continue;
-
-    html += `<section class="highscore-game"><h3>${escapeHtml(game)}</h3><ol>`;
-    for (const e of entries) {
-      html += `<li><span class="hs-name">${escapeHtml(String(e.name))}</span> <span class="hs-score">${Number(e.score)}</span></li>`;
+    if (gamesToShow.includes(game)) {
+      continue;
     }
-    html += `</ol></section>`;
+
+    const entries = groups[game].slice().sort((a, b) => b.score - a.score);
+
+    if (entries.length === 0) {
+      continue;
+    }
+
+    html += `<section class="highscore-game">`;
+    html += `<h3>${escapeHtml(game)}</h3>`;
+    html += `<ol>`;
+
+    for (const e of entries) {
+      html += `
+        <li>
+          <span class="hs-name">${escapeHtml(e.name)}</span>
+          <span class="hs-score">${Number(e.score)}</span>
+        </li>
+      `;
+    }
+
+    html += `</ol>`;
+    html += `</section>`;
   }
 
   box.innerHTML = html;
 }
 
-// Einfacher HTML-Escaper für Namen/Texte
+function showHighscores() {
+  renderHighscoreList();
+}
+
+function clearHighscores() {
+  localStorage.removeItem("highscores");
+  renderHighscoreList();
+}
+
 function escapeHtml(str) {
   return String(str)
     .replace(/&/g, "&amp;")
