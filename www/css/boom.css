@@ -1,10 +1,10 @@
 /* ============================================================
-   BOOM.CSS – Hamster-Theme (Video-Version)
-   Komplettes CSS für Video-Enemies, Overlays, HUD & schwarzen Hintergrund
+   BOOM.CSS – Tico/Hamster Theme
+   Safe-Area + HUD + Enemies above HUD
 ============================================================ */
 
 :root {
-  --bg-primary: #000000; /* komplett schwarz */
+  --bg-primary: #000000;
   --fg-dark: #f5f5f5;
   --accent-warm: #ff8c42;
   --accent-gold: #ffc857;
@@ -12,132 +12,76 @@
   --shadow-soft: 0 6px 16px rgba(0, 0, 0, 0.4);
   --shadow-medium: 0 10px 24px rgba(0, 0, 0, 0.6);
   --border-radius: 10px;
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+
+  --game-padding: 16px;
+  --play-top: calc(var(--safe-top) + var(--game-padding));
+  --play-right: calc(var(--safe-right) + var(--game-padding));
+  --play-bottom: calc(var(--safe-bottom) + var(--game-padding));
+  --play-left: calc(var(--safe-left) + var(--game-padding));
+
+  --z-hud: 1000;
+  --z-enemy: 5000;
+  --z-overlay: 9000;
+  --z-dialog: 10000;
 }
 
-/* ============================================================
-   Grundlayout
-============================================================ */
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
-html, body {
+html,
+body {
+  width: 100%;
   height: 100%;
+  margin: 0;
 }
 
 body {
-  margin: 0;
   overflow: hidden;
-  background: black; /* GANZES SPIEL SCHWARZ */
+  background: #000;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
   color: var(--fg-dark);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+  touch-action: none;
 }
 
-/* ============================================================
-   GAME CONTAINER – ohne Rand, schwarz, Safe-Area
-============================================================ */
 #game-container {
   position: relative;
   width: 100vw;
   height: 100vh;
-  background: black; /* wichtig */
+  background: #000;
   overflow: hidden;
   z-index: 1;
 
-  /* Safe-Area für Android/iOS */
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
+  padding-top: var(--play-top);
+  padding-right: var(--play-right);
+  padding-bottom: var(--play-bottom);
+  padding-left: var(--play-left);
 }
 
-/* ============================================================
-   Gegner / Enemies — VIDEO-VERSION (75×75)
-============================================================ */
-/* ============================================================
-   Gegner / Enemies — VIDEO + PNG (75×75)
-============================================================ */
-
-.enemy {
+/* Spielfeld-Helfer, falls du ihn im JS nutzt */
+#playfield {
   position: absolute;
-  width: 75px;
-  height: 75px;
-  cursor: pointer;
-  transition: transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 160ms ease;
-  z-index: 100;
-  border-radius: 50%;
-  box-shadow: var(--shadow-soft);
-  overflow: hidden; /* verhindert Überhang */
-  background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Gemeinsame Regeln für Video + PNG */
-.enemy video,
-.enemy img {
-  width: 75px;
-  height: 75px;
-  object-fit: contain; /* verhindert Überhang */
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%); /* perfekt zentriert */
+  inset: 0;
   pointer-events: none;
-  background: transparent;
 }
 
-/* Hover / Active Effekte */
-.enemy:hover {
-  transform: scale(1.08);
-  box-shadow: var(--shadow-medium);
-}
-.enemy:active {
-  transform: scale(0.95);
-}
-
-.enemy:active {
-  transform: scale(0.95) ;
-}
-
-/* Fokus */
-.enemy:focus {
-  box-shadow: 0 0 0 4px rgba(255, 200, 120, 0.25);
-  outline: none;
-}
-
-/* Spawn-Animation */
-.enemy.spawn {
-  animation: enemy-spawn 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-@keyframes enemy-spawn {
-  from { transform: scale(0.6); opacity: 0; }
-  to   { transform: scale(1);   opacity: 1; }
-}
-
-/* ============================================================
-   Treffer-Effekt (Container blinkt)
-============================================================ */
-.flash-red {
-  animation: hamster-hit-ghost 240ms cubic-bezier(0.68, -0.55, 0.27, 1.55);
-}
-@keyframes hamster-hit-ghost {
-  0%   { box-shadow: 0 0 0 6px rgba(255,107,157,0.25); transform: scale(1); }
-  50%  { box-shadow: 0 0 0 10px rgba(255,140,66,0.2); transform: scale(1.06); }
-  100% { box-shadow: none; transform: scale(1); }
-}
-
-/* ============================================================
-   HUD – Score, Lives, Round
-============================================================ */
 #hud {
   position: fixed;
-  top: 16px;
-  right: 16px;
-  z-index: 2;
+  top: var(--play-top);
+  right: var(--play-right);
+  z-index: var(--z-hud);
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 8px;
+  pointer-events: none;
 }
 
 .hud-row {
@@ -152,19 +96,91 @@ body {
   border: 1px solid rgba(255, 140, 66, 0.2);
 }
 
-/* ============================================================
-   Overlays (Start, Runde, Game Over)
-============================================================ */
+.enemy {
+  position: absolute;
+  width: 75px;
+  height: 75px;
+  cursor: pointer;
+  z-index: var(--z-enemy);
+  border-radius: 50%;
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 160ms ease;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.enemy video,
+.enemy img {
+  width: 75px;
+  height: 75px;
+  object-fit: contain;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  background: transparent;
+}
+
+.enemy:hover {
+  transform: scale(1.08);
+  box-shadow: var(--shadow-medium);
+}
+
+.enemy:active {
+  transform: scale(0.95);
+}
+
+.enemy:focus {
+  box-shadow: 0 0 0 4px rgba(255, 200, 120, 0.25);
+  outline: none;
+}
+
+.enemy.spawn {
+  animation: enemy-spawn 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes enemy-spawn {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.flash-red {
+  animation: hamster-hit-ghost 240ms cubic-bezier(0.68, -0.55, 0.27, 1.55);
+}
+
+@keyframes hamster-hit-ghost {
+  0% {
+    box-shadow: 0 0 0 6px rgba(255, 107, 157, 0.25);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(255, 140, 66, 0.2);
+    transform: scale(1.06);
+  }
+  100% {
+    box-shadow: none;
+    transform: scale(1);
+  }
+}
+
 .overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-
+  inset: 0;
   background: rgba(0, 0, 0, 0.85);
   backdrop-filter: blur(4px);
-
   color: white;
   display: flex;
   flex-direction: column;
@@ -172,8 +188,12 @@ body {
   align-items: center;
   font-size: 32px;
   font-weight: 700;
-  z-index: 9000;
-  padding: 24px;
+  z-index: var(--z-overlay);
+  padding:
+    calc(var(--safe-top) + 24px)
+    calc(var(--safe-right) + 24px)
+    calc(var(--safe-bottom) + 24px)
+    calc(var(--safe-left) + 24px);
   text-align: center;
 }
 
@@ -190,26 +210,24 @@ body {
   box-shadow: var(--shadow-soft);
 }
 
-/* ============================================================
-   Highscore-Eingabedialog
-============================================================ */
 #hs-input {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  inset: 0;
   background: rgba(0, 0, 0, 0.85);
   backdrop-filter: blur(4px);
   display: none;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  z-index: 10000;
+  z-index: var(--z-dialog);
   color: white;
   font-size: 28px;
   font-weight: 700;
-  padding: 24px;
+  padding:
+    calc(var(--safe-top) + 24px)
+    calc(var(--safe-right) + 24px)
+    calc(var(--safe-bottom) + 24px)
+    calc(var(--safe-left) + 24px);
   text-align: center;
 }
 
@@ -225,45 +243,65 @@ body {
   color: white;
 }
 
-/* ============================================================
-   Game Over Menü
-============================================================ */
 #gameover-menu {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  inset: 0;
   background: rgba(0, 0, 0, 0.85);
   backdrop-filter: blur(4px);
   display: none;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  z-index: calc(var(--z-dialog) - 500);
+  color: white;
   font-size: 32px;
   font-weight: 700;
-  z-index: 9500;
-  color: white;
-  padding: 24px;
+  padding:
+    calc(var(--safe-top) + 24px)
+    calc(var(--safe-right) + 24px)
+    calc(var(--safe-bottom) + 24px)
+    calc(var(--safe-left) + 24px);
   text-align: center;
 }
 
-/* ============================================================
-   Responsive Design
-============================================================ */
+.hidden {
+  display: none !important;
+}
+
+button,
+input,
+.enemy {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  touch-action: manipulation;
+}
+
 @media (max-width: 640px) {
-  #hud { top: 12px; right: 12px; gap: 6px; }
-  .hud-row { padding: 8px 12px; font-size: 14px; min-width: 120px; }
-  .overlay { font-size: 28px; padding: 18px; }
-  #hs-input { font-size: 24px; }
+  .hud-row {
+    padding: 8px 12px;
+    font-size: 14px;
+    min-width: 120px;
+  }
+
+  .overlay {
+    font-size: 28px;
+  }
+
+  #hs-input {
+    font-size: 24px;
+  }
 }
 
 @media (max-width: 420px) {
-  .hud-row { font-size: 13px; padding: 6px 10px; min-width: 100px; }
-  #hs-input input { width: 180px; }
-}
+  .hud-row {
+    font-size: 13px;
+    padding: 6px 10px;
+    min-width: 100px;
+  }
 
-/* ============================================================
-   Utilities
-============================================================ */
-.hidden { display: none !important; }
+  #hs-input input {
+    width: 180px;
+  }
+}
