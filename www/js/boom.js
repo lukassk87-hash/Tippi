@@ -1,19 +1,26 @@
-let lives = 5;
+let lives = 3;
 let round = 1;
 let score = 0;
+
+const ENEMY_SIZE = 75;
+const ENEMY_RADIUS = ENEMY_SIZE / 2;
+
+const enemies = new Set();
+let animationFrameId = null;
 
 // ------------------------------------------------------------
 // VIDEO GLOBAL EINMAL LADEN
 // ------------------------------------------------------------
 const videoTemplate = document.createElement("video");
-videoTemplate.src = "resources/evil.mp4";
+videoTemplate.src = "resources/evil2.mp4";
 videoTemplate.autoplay = true;
 videoTemplate.loop = true;
 videoTemplate.muted = true;
 videoTemplate.playsInline = true;
+videoTemplate.preload = "auto";
 
 // ------------------------------------------------------------
-// DOM ELEMENTE
+// DOM
 // ------------------------------------------------------------
 const container = document.getElementById("game-container");
 const livesBox = document.getElementById("lives");
@@ -21,7 +28,71 @@ const roundBox = document.getElementById("round");
 const scoreBox = document.getElementById("score");
 
 // ------------------------------------------------------------
-// Highscore-Eingabedialog erzeugen
+// Hilfsfunktionen
+// ------------------------------------------------------------
+function clamp(value, min, max) {
+    return Math.min(Math.max(value, min), max);
+}
+
+function rand(min, max) {
+    return Math.random() * (max - min) + min;
+}
+
+function getCssNumber(name) {
+    const styles = getComputedStyle(document.documentElement);
+    return parseFloat(styles.getPropertyValue(name)) || 0;
+}
+
+function getPlayBounds() {
+    const top = getCssNumber("--play-top");
+    const right = getCssNumber("--play-right");
+    const bottom = getCssNumber("--play-bottom");
+    const left = getCssNumber("--play-left");
+
+    return {
+        minX: left,
+        minY: top,
+        maxX: Math.max(left, window.innerWidth - right - ENEMY_SIZE),
+        maxY: Math.max(top, window.innerHeight - bottom - ENEMY_SIZE)
+    };
+}
+
+function setEnemyState(enemy, x, y, vx, vy) {
+    enemy.dataset.x = String(x);
+    enemy.dataset.y = String(y);
+    enemy.dataset.vx = String(vx);
+    enemy.dataset.vy = String(vy);
+    enemy.style.left = x + "px";
+    enemy.style.top = y + "px";
+}
+
+function getEnemyState(enemy) {
+    return {
+        x: parseFloat(enemy.dataset.x) || 0,
+        y: parseFloat(enemy.dataset.y) || 0,
+        vx: parseFloat(enemy.dataset.vx) || 0,
+        vy: parseFloat(enemy.dataset.vy) || 0
+    };
+}
+
+function removeEnemyFromActiveSet(enemy) {
+    enemies.delete(enemy);
+    enemy.dataset.dead = "1";
+}
+
+function keepEnemiesInsideBounds() {
+    const bounds = getPlayBounds();
+
+    enemies.forEach(enemy => {
+        const s = getEnemyState(enemy);
+        const x = clamp(s.x, bounds.minX, bounds.maxX);
+        const y = clamp(s.y, bounds.minY, bounds.maxY);
+        setEnemyState(enemy, x, y, s.vx, s.vy);
+    });
+}
+
+// ------------------------------------------------------------
+// Highscore-Eingabedialog
 // ------------------------------------------------------------
 function createHighscoreInput() {
     const box = document.createElement("div");
@@ -52,7 +123,7 @@ function createHighscoreInput() {
 createHighscoreInput();
 
 // ------------------------------------------------------------
-// Game Over Menü erzeugen
+// Game Over Menü
 // ------------------------------------------------------------
 function createGameOverMenu() {
     const overlay = document.createElement("div");
@@ -80,9 +151,6 @@ function createGameOverMenu() {
 
 createGameOverMenu();
 
-// ------------------------------------------------------------
-// Game Over Menü anzeigen
-// ------------------------------------------------------------
 function showGameOverMenu(sc) {
     const overlay = document.getElementById("gameover-menu");
     const finalScore = document.getElementById("final-score");
@@ -121,58 +189,50 @@ function checkRoundEnd() {
 }
 
 // ------------------------------------------------------------
-// Gegner erzeugen – VIDEO + PNG (hit/boom)
+// Gegner erzeugen
 // ------------------------------------------------------------
 function spawnEnemy(options = {}) {
     const generation = options.generation || 1;
     const maxGeneration = options.maxGeneration || 2;
+    const bounds = getPlayBounds();
 
     const enemy = document.createElement("div");
-    enemy.classList.add("enemy");
+    enemy.classList.add("enemy", "spawn");
+    enemy.dataset.generation = String(generation);
+    enemy.dataset.maxGeneration = String(maxGeneration);
+    enemy.dataset.dead = "0";
 
-    // Enemy unsichtbar starten (verhindert grauen Platzhalter)
-    enemy.style.display = "none";
-
-    // Video aus globalem Template klonen
     const vid = videoTemplate.cloneNode(true);
     enemy.appendChild(vid);
 
-    enemy.dataset.generation = String(generation);
-    enemy.dataset.maxGeneration = String(maxGeneration);
+    let x = rand(bounds.minX, bounds.maxX);
+    let y = rand(bounds.minY, bounds.maxY);
 
-    const maxX = window.innerWidth - 75;
-    const maxY = window.innerHeight - 75;
+    let tries = 0;
+    while (tries < 20 && isOverlappingExisting(x, y)) {
+        x = rand(bounds.minX, bounds.maxX);
+        y = rand(bounds.minY, bounds.maxY);
+        tries++;
+    }
 
-    enemy.style.left = Math.random() * maxX + "px";
-    enemy.style.top = Math.random() * maxY + "px";
+    let vx = (Math.random() * 4 - 2) * 0.4;
+    let vy = (Math.random() * 4 - 2) * 0.4;
+
+    if (Math.abs(vx) < 0.15) vx = vx >= 0 ? 0.15 : -0.15;
+    if (Math.abs(vy) < 0.15) vy = vy >= 0 ? 0.15 : -0.15;
+
+    setEnemyState(enemy, x, y, vx, vy);
 
     container.appendChild(enemy);
-
-    // Nach kurzer Zeit sichtbar machen
-    setTimeout(() => {
-        enemy.style.display = "block";
-    }, 1000);
+    enemies.add(enemy);
+    startGameLoop();
 
     let clicked = false;
 
-    // Geschwindigkeit
-    let speedX = (Math.random() * 4 - 2) * 0.4;
-    let speedY = (Math.random() * 4 - 2) * 0.4;
-
-    if (Math.abs(speedX) < 0.15) speedX = speedX >= 0 ? 0.15 : -0.15;
-    if (Math.abs(speedY) < 0.15) speedY = speedY >= 0 ? 0.15 : -0.15;
-
-    enemy.dataset.speedX = speedX;
-    enemy.dataset.speedY = speedY;
-
-    moveEnemy(enemy);
-
-    // --------------------------------------------------------
-    // KLICK
-    // --------------------------------------------------------
     enemy.addEventListener("click", () => {
-        if (clicked) return;
+        if (clicked || enemy.dataset.dead === "1") return;
         clicked = true;
+        removeEnemyFromActiveSet(enemy);
 
         score += 100;
         updateUI();
@@ -189,7 +249,6 @@ function spawnEnemy(options = {}) {
         setTimeout(() => {
             enemy.remove();
 
-            // Split-Logik
             if (gen < maxGen) {
                 let splitChance = 1.0;
 
@@ -211,13 +270,12 @@ function spawnEnemy(options = {}) {
         }, 500);
     });
 
-    // --------------------------------------------------------
-    // Explosion (wenn nicht geklickt)
-    // --------------------------------------------------------
-    const timeLimit = 3000 + Math.random() * 3000;
+    const timeLimit = 2000 + Math.random() * 3000;
 
     setTimeout(() => {
-        if (clicked) return;
+        if (clicked || enemy.dataset.dead === "1") return;
+
+        removeEnemyFromActiveSet(enemy);
 
         if (enemy.contains(vid)) enemy.removeChild(vid);
 
@@ -238,46 +296,163 @@ function spawnEnemy(options = {}) {
     }, timeLimit);
 }
 
-// ------------------------------------------------------------
-// Gegnerbewegung
-// ------------------------------------------------------------
-function moveEnemy(enemy) {
-    function step() {
-        if (!document.body.contains(enemy)) return;
+function isOverlappingExisting(x, y) {
+    for (const enemy of enemies) {
+        const s = getEnemyState(enemy);
+        const dx = (x + ENEMY_RADIUS) - (s.x + ENEMY_RADIUS);
+        const dy = (y + ENEMY_RADIUS) - (s.y + ENEMY_RADIUS);
+        const dist = Math.hypot(dx, dy);
 
-        let speedX = parseFloat(enemy.dataset.speedX);
-        let speedY = parseFloat(enemy.dataset.speedY);
-
-        let x = parseFloat(enemy.style.left);
-        let y = parseFloat(enemy.style.top);
-
-        x += speedX;
-        y += speedY;
-
-        if (x < 0 || x > window.innerWidth - 75) speedX *= -1;
-        if (y < 0 || y > window.innerHeight - 75) speedY *= -1;
-
-        enemy.dataset.speedX = speedX;
-        enemy.dataset.speedY = speedY;
-
-        enemy.style.left = x + "px";
-        enemy.style.top = y + "px";
-
-        requestAnimationFrame(step);
+        if (dist < ENEMY_SIZE) {
+            return true;
+        }
     }
-    requestAnimationFrame(step);
+
+    return false;
+}
+
+// ------------------------------------------------------------
+// Bewegung + Wandabprallen
+// ------------------------------------------------------------
+function updateEnemyPositions() {
+    const bounds = getPlayBounds();
+
+    enemies.forEach(enemy => {
+        const s = getEnemyState(enemy);
+
+        let x = s.x + s.vx;
+        let y = s.y + s.vy;
+        let vx = s.vx;
+        let vy = s.vy;
+
+        if (x <= bounds.minX) {
+            x = bounds.minX;
+            vx = Math.abs(vx);
+        } else if (x >= bounds.maxX) {
+            x = bounds.maxX;
+            vx = -Math.abs(vx);
+        }
+
+        if (y <= bounds.minY) {
+            y = bounds.minY;
+            vy = Math.abs(vy);
+        } else if (y >= bounds.maxY) {
+            y = bounds.maxY;
+            vy = -Math.abs(vy);
+        }
+
+        setEnemyState(enemy, x, y, vx, vy);
+    });
+}
+
+// ------------------------------------------------------------
+// Gegner prallen aneinander ab
+// ------------------------------------------------------------
+function handleEnemyCollisions() {
+    const active = [...enemies];
+    const bounds = getPlayBounds();
+
+    for (let i = 0; i < active.length; i++) {
+        for (let j = i + 1; j < active.length; j++) {
+            const a = active[i];
+            const b = active[j];
+
+            const sa = getEnemyState(a);
+            const sb = getEnemyState(b);
+
+            const acx = sa.x + ENEMY_RADIUS;
+            const acy = sa.y + ENEMY_RADIUS;
+            const bcx = sb.x + ENEMY_RADIUS;
+            const bcy = sb.y + ENEMY_RADIUS;
+
+            let dx = bcx - acx;
+            let dy = bcy - acy;
+            let dist = Math.hypot(dx, dy);
+
+            if (dist === 0) {
+                dx = (Math.random() - 0.5) * 0.01;
+                dy = (Math.random() - 0.5) * 0.01;
+                dist = Math.hypot(dx, dy);
+            }
+
+            const minDist = ENEMY_SIZE;
+
+            if (dist < minDist) {
+                const nx = dx / dist;
+                const ny = dy / dist;
+                const overlap = minDist - dist;
+
+                let ax = sa.x - nx * (overlap / 2);
+                let ay = sa.y - ny * (overlap / 2);
+                let bx = sb.x + nx * (overlap / 2);
+                let by = sb.y + ny * (overlap / 2);
+
+                ax = clamp(ax, bounds.minX, bounds.maxX);
+                ay = clamp(ay, bounds.minY, bounds.maxY);
+                bx = clamp(bx, bounds.minX, bounds.maxX);
+                by = clamp(by, bounds.minY, bounds.maxY);
+
+                let avx = sa.vx;
+                let avy = sa.vy;
+                let bvx = sb.vx;
+                let bvy = sb.vy;
+
+                const relativeVelocity = (avx - bvx) * nx + (avy - bvy) * ny;
+
+                if (relativeVelocity > 0) {
+                    avx -= relativeVelocity * nx;
+                    avy -= relativeVelocity * ny;
+                    bvx += relativeVelocity * nx;
+                    bvy += relativeVelocity * ny;
+                } else {
+                    avx -= nx * 0.05;
+                    avy -= ny * 0.05;
+                    bvx += nx * 0.05;
+                    bvy += ny * 0.05;
+                }
+
+                setEnemyState(a, ax, ay, avx, avy);
+                setEnemyState(b, bx, by, bvx, bvy);
+            }
+        }
+    }
+}
+
+// ------------------------------------------------------------
+// Zentraler Game Loop
+// ------------------------------------------------------------
+function gameLoop() {
+    if (enemies.size === 0) {
+        animationFrameId = null;
+        return;
+    }
+
+    updateEnemyPositions();
+    handleEnemyCollisions();
+
+    animationFrameId = requestAnimationFrame(gameLoop);
+}
+
+function startGameLoop() {
+    if (animationFrameId !== null) return;
+    animationFrameId = requestAnimationFrame(gameLoop);
 }
 
 // ------------------------------------------------------------
 // Effekte
 // ------------------------------------------------------------
 function flashRed() {
+    container.classList.remove("flash-red");
+    void container.offsetWidth;
     container.classList.add("flash-red");
-    setTimeout(() => container.classList.remove("flash-red"), 200);
+
+    setTimeout(() => {
+        container.classList.remove("flash-red");
+    }, 220);
 }
 
 // ------------------------------------------------------------
-// START OVERLAY
+// Start Overlay
 // ------------------------------------------------------------
 function createStartOverlay() {
     const overlay = document.createElement("div");
@@ -300,7 +475,7 @@ function createStartOverlay() {
 createStartOverlay();
 
 // ------------------------------------------------------------
-// RUNDEN-OVERLAY
+// Runden Overlay
 // ------------------------------------------------------------
 function createRoundOverlay() {
     const overlay = document.createElement("div");
@@ -335,10 +510,20 @@ function showRoundOverlay() {
 }
 
 // ------------------------------------------------------------
-// SPIELENDE
+// Spielende
 // ------------------------------------------------------------
 function endGame() {
     const hsBox = document.getElementById("hs-input");
     document.getElementById("hs-score").textContent = score;
     hsBox.style.display = "flex";
 }
+
+// ------------------------------------------------------------
+// Resize
+// ------------------------------------------------------------
+window.addEventListener("resize", keepEnemiesInsideBounds);
+
+// ------------------------------------------------------------
+// Init
+// ------------------------------------------------------------
+updateUI(); 
