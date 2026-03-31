@@ -51,17 +51,44 @@ function getCssNumber(name) {
     return parseFloat(styles.getPropertyValue(name)) || 0;
 }
 
-function getPlayBounds() {
-    const top = getCssNumber("--play-top");
-    const right = getCssNumber("--play-right");
-    const bottom = getCssNumber("--play-bottom");
-    const left = getCssNumber("--play-left");
+function getViewportRect() {
+    const vv = window.visualViewport;
+
+    if (vv) {
+        return {
+            left: vv.offsetLeft,
+            top: vv.offsetTop,
+            width: vv.width,
+            height: vv.height
+        };
+    }
 
     return {
-        minX: left,
-        minY: top,
-        maxX: Math.max(left, window.innerWidth - right - ENEMY_SIZE),
-        maxY: Math.max(top, window.innerHeight - bottom - ENEMY_SIZE)
+        left: 0,
+        top: 0,
+        width: window.innerWidth,
+        height: window.innerHeight
+    };
+}
+
+function getPlayBounds() {
+    const topInset = getCssNumber("--play-top");
+    const rightInset = getCssNumber("--play-right");
+    const bottomInset = getCssNumber("--play-bottom");
+    const leftInset = getCssNumber("--play-left");
+
+    const viewport = getViewportRect();
+
+    const minX = viewport.left + leftInset;
+    const minY = viewport.top + topInset;
+    const maxX = viewport.left + viewport.width - rightInset - ENEMY_SIZE;
+    const maxY = viewport.top + viewport.height - bottomInset - ENEMY_SIZE;
+
+    return {
+        minX,
+        minY,
+        maxX: Math.max(minX, maxX),
+        maxY: Math.max(minY, maxY)
     };
 }
 
@@ -630,11 +657,18 @@ function endGame() {
 }
 
 // ------------------------------------------------------------
-// Resize
+// Resize / Viewport-Änderungen
 // ------------------------------------------------------------
 window.addEventListener("resize", keepEnemiesInsideBounds);
+window.addEventListener("orientationchange", keepEnemiesInsideBounds);
+
+if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", keepEnemiesInsideBounds);
+    window.visualViewport.addEventListener("scroll", keepEnemiesInsideBounds);
+}
 
 // ------------------------------------------------------------
 // Init
 // ------------------------------------------------------------
 updateUI();
+keepEnemiesInsideBounds();
