@@ -51,38 +51,19 @@ function getCssNumber(name) {
     return parseFloat(styles.getPropertyValue(name)) || 0;
 }
 
-function getViewportRect() {
-    const vv = window.visualViewport;
-
-    if (vv) {
-        return {
-            left: vv.offsetLeft,
-            top: vv.offsetTop,
-            width: vv.width,
-            height: vv.height
-        };
-    }
-
-    return {
-        left: 0,
-        top: 0,
-        width: window.innerWidth,
-        height: window.innerHeight
-    };
-}
-
 function getPlayBounds() {
     const topInset = getCssNumber("--play-top");
     const rightInset = getCssNumber("--play-right");
     const bottomInset = getCssNumber("--play-bottom");
     const leftInset = getCssNumber("--play-left");
 
-    const viewport = getViewportRect();
+    const width = container.clientWidth;
+    const height = container.clientHeight;
 
-    const minX = viewport.left + leftInset;
-    const minY = viewport.top + topInset;
-    const maxX = viewport.left + viewport.width - rightInset - ENEMY_SIZE;
-    const maxY = viewport.top + viewport.height - bottomInset - ENEMY_SIZE;
+    const minX = leftInset;
+    const minY = topInset;
+    const maxX = width - rightInset - ENEMY_SIZE;
+    const maxY = height - bottomInset - ENEMY_SIZE;
 
     return {
         minX,
