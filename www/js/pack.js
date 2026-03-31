@@ -187,7 +187,6 @@ document.addEventListener("DOMContentLoaded", () => {
     acceptingInput = false;
     setMessage("Spiel vorbei.");
     finalScore.textContent = `Du hast Runde ${round} erreicht.`;
-    gameOverBoxShow();
 
     try {
       const score = round;
@@ -332,8 +331,8 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (e) {}
 
     // Umgekehrte Steuerung: Standard = miss.png, kurzer Wechsel = miss2.png
-    const SRC_NORMAL = "www/resources/miss.png";
-    const SRC_FLASH  = "www/resources/miss2.png";
+    const SRC_NORMAL = "resources/miss.png";
+    const SRC_FLASH  = "resources/miss2.png";
 
     const currentAttr = imgEl.getAttribute('src') || "";
     let normal = SRC_NORMAL;
