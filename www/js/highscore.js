@@ -71,7 +71,7 @@ function enforcePerGameLimits(list) {
   return result;
 }
 
-function addHighscore(name, score, game = "Tippi", extra = null) {
+function addHighscore(name, score, game = "Wo ist Tico?", extra = null) {
   const nm = String(name || "Spieler").trim() || "Spieler";
   const sc = Number(score || 0);
   const gm = normalizeGameName(game || "Tippi");
