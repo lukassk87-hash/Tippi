@@ -1,8 +1,6 @@
 name: Build Android APK2
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -42,15 +40,12 @@ jobs:
       - name: Dummy build
         run: npm run build
 
-      # Android-Plattform zuerst erzeugen
       - name: Add Android platform
         run: npx cap add android
 
-      # Icons erst jetzt generieren
       - name: Generate Android Icons
         run: npx capacitor-assets generate --android
 
-      # Jetzt synchronisieren
       - name: Sync Capacitor
         run: npx cap sync android
 
@@ -61,7 +56,6 @@ jobs:
         working-directory: android
         run: ./gradlew assembleDebug --stacktrace --quiet
 
-      # Nur die APK hochladen – nicht den ganzen Build-Ordner
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
