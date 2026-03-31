@@ -1,9 +1,9 @@
-const DEFAULT_GAME_LIMIT = 10;
+const DEFAULT_GAME_LIMIT = 3;
 const GAME_LIMITS = {
   "Miss": 3,
-  "Tippi": 10,
-  "Ich tippe meinen Päcki": 10,
-  "Tico geht angeln": 10
+  "Wo ist Tico": 3,
+  "Ich tippe meinen Päcki": 3,
+  "Tico geht angeln": 3
 };
 
 function loadHighscores() {
