@@ -4,9 +4,9 @@ document.addEventListener("DOMContentLoaded", () => {
     "Linkes Auge": [33,34,43,44],
     "Rechtes Auge": [37,38,46,47,48],
     "Nase": [45,46,55,56],
-    "Zunge": [64,65,66,74,75,76],
-    "Linkes Ohr": [12,13,14,22,23],
-    "Rechtes Ohr": [17,18,19,28,29,39]
+    "Zunge": [64,65,66,74,75],
+    "Linkes Ohr": [1,2,3,11,12,13,21,22],
+    "Rechtes Ohr": [8,9,10,18,19,20,29,30]
   };
 
   const PART_NAMES = Object.keys(PARTS);
