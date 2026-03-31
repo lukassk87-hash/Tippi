@@ -352,10 +352,10 @@ function spawnEnemy(options = {}) {
                 let splitChance = 1.0;
 
                 if (gen >= 3) {
-                    if (gen === 3) splitChance = 0.5;
-                    else if (gen === 4) splitChance = 0.4;
-                    else if (gen === 5) splitChance = 0.3;
-                    else if (gen >= 6) splitChance = 0.15;
+                    if (gen === 3) splitChance = 0.7;
+                    else if (gen === 4) splitChance = 0.5;
+                    else if (gen === 5) splitChance = 0.4;
+                    else if (gen >= 6) splitChance = 0.25;
                 }
 
                 if (Math.random() < splitChance) {
