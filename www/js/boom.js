@@ -4,9 +4,17 @@ let score = 0;
 
 const ENEMY_SIZE = 75;
 const ENEMY_RADIUS = ENEMY_SIZE / 2;
+const GAME_NAME = "Tico wird sauer";
 
 const enemies = new Set();
 let animationFrameId = null;
+
+// ------------------------------------------------------------
+// Game-State Guards
+// ------------------------------------------------------------
+let gameOverTriggered = false;
+let highscoreDialogOpen = false;
+let highscoreSaved = false;
 
 // ------------------------------------------------------------
 // VIDEO GLOBAL EINMAL LADEN
@@ -91,6 +99,46 @@ function keepEnemiesInsideBounds() {
     });
 }
 
+function stopGameLoop() {
+    if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+    }
+}
+
+function cleanupRemainingEnemies() {
+    enemies.forEach(enemy => {
+        enemy.dataset.dead = "1";
+        enemy.remove();
+    });
+
+    enemies.clear();
+    stopGameLoop();
+}
+
+function shouldAskForHighscore(sc) {
+    if (typeof isHighscore === "function") {
+        try {
+            return Boolean(isHighscore(sc, GAME_NAME));
+        } catch (err) {
+            console.warn("isHighscore() fehlgeschlagen, fallback aktiv:", err);
+        }
+    }
+
+    if (typeof getHighscores === "function") {
+        try {
+            const entries = getHighscores(GAME_NAME) || [];
+            if (entries.length < 10) return true;
+            const lowest = Math.min(...entries.map(entry => Number(entry.score) || 0));
+            return sc > lowest;
+        } catch (err) {
+            console.warn("getHighscores() fehlgeschlagen, fallback aktiv:", err);
+        }
+    }
+
+    return sc > 0;
+}
+
 // ------------------------------------------------------------
 // Highscore-Eingabedialog
 // ------------------------------------------------------------
@@ -109,18 +157,51 @@ function createHighscoreInput() {
 
     document.body.appendChild(box);
 
-    document.getElementById("hs-save").addEventListener("click", () => {
-        const name = document.getElementById("hs-name").value.trim() || "Spieler";
-        const sc = Number(document.getElementById("hs-score").textContent);
+    const nameInput = document.getElementById("hs-name");
+    const saveButton = document.getElementById("hs-save");
 
-        addHighscore(name, sc, "Tico wird sauer");
+    saveButton.addEventListener("click", () => {
+        if (highscoreSaved) return;
+
+        highscoreSaved = true;
+        saveButton.disabled = true;
+
+        const name = nameInput.value.trim() || "Spieler";
+        const sc = Number(document.getElementById("hs-score").textContent) || 0;
+
+        if (typeof addHighscore === "function") {
+            try {
+                addHighscore(name, sc, GAME_NAME);
+            } catch (err) {
+                console.error("Highscore konnte nicht gespeichert werden:", err);
+            }
+        }
 
         box.style.display = "none";
+        highscoreDialogOpen = false;
         showGameOverMenu(sc);
     });
 }
 
 createHighscoreInput();
+
+function showHighscoreInput(sc) {
+    if (highscoreDialogOpen || highscoreSaved) return;
+
+    highscoreDialogOpen = true;
+
+    const box = document.getElementById("hs-input");
+    const scoreNode = document.getElementById("hs-score");
+    const nameInput = document.getElementById("hs-name");
+    const saveButton = document.getElementById("hs-save");
+
+    scoreNode.textContent = String(sc);
+    nameInput.value = "";
+    saveButton.disabled = false;
+
+    box.style.display = "flex";
+    nameInput.focus();
+}
 
 // ------------------------------------------------------------
 // Game Over Menü
@@ -172,6 +253,8 @@ function updateUI() {
 // Rundenlogik
 // ------------------------------------------------------------
 function startRound() {
+    if (gameOverTriggered) return;
+
     const maxGeneration = round + 1;
 
     spawnEnemy({
@@ -181,6 +264,8 @@ function startRound() {
 }
 
 function checkRoundEnd() {
+    if (gameOverTriggered) return;
+
     const remaining = document.querySelectorAll(".enemy").length;
 
     if (remaining === 0 && lives > 0) {
@@ -192,6 +277,8 @@ function checkRoundEnd() {
 // Gegner erzeugen
 // ------------------------------------------------------------
 function spawnEnemy(options = {}) {
+    if (gameOverTriggered) return;
+
     const generation = options.generation || 1;
     const maxGeneration = options.maxGeneration || 2;
     const bounds = getPlayBounds();
@@ -230,7 +317,9 @@ function spawnEnemy(options = {}) {
     let clicked = false;
 
     enemy.addEventListener("click", () => {
+        if (gameOverTriggered) return;
         if (clicked || enemy.dataset.dead === "1") return;
+
         clicked = true;
         removeEnemyFromActiveSet(enemy);
 
@@ -248,6 +337,8 @@ function spawnEnemy(options = {}) {
 
         setTimeout(() => {
             enemy.remove();
+
+            if (gameOverTriggered) return;
 
             if (gen < maxGen) {
                 let splitChance = 1.0;
@@ -273,6 +364,7 @@ function spawnEnemy(options = {}) {
     const timeLimit = 2000 + Math.random() * 3000;
 
     setTimeout(() => {
+        if (gameOverTriggered) return;
         if (clicked || enemy.dataset.dead === "1") return;
 
         removeEnemyFromActiveSet(enemy);
@@ -284,15 +376,20 @@ function spawnEnemy(options = {}) {
         enemy.appendChild(img);
 
         flashRed();
-        lives--;
-        updateUI();
+
+        if (lives > 0) {
+            lives--;
+            updateUI();
+        }
 
         setTimeout(() => {
             enemy.remove();
             checkRoundEnd();
         }, 600);
 
-        if (lives <= 0) endGame();
+        if (lives <= 0) {
+            endGame();
+        }
     }, timeLimit);
 }
 
@@ -422,7 +519,7 @@ function handleEnemyCollisions() {
 // Zentraler Game Loop
 // ------------------------------------------------------------
 function gameLoop() {
-    if (enemies.size === 0) {
+    if (gameOverTriggered || enemies.size === 0) {
         animationFrameId = null;
         return;
     }
@@ -434,6 +531,7 @@ function gameLoop() {
 }
 
 function startGameLoop() {
+    if (gameOverTriggered) return;
     if (animationFrameId !== null) return;
     animationFrameId = requestAnimationFrame(gameLoop);
 }
@@ -491,6 +589,7 @@ function createRoundOverlay() {
     document.body.appendChild(overlay);
 
     document.getElementById("next-round-btn").addEventListener("click", () => {
+        if (gameOverTriggered) return;
         overlay.style.display = "none";
         startRound();
     });
@@ -499,6 +598,8 @@ function createRoundOverlay() {
 createRoundOverlay();
 
 function showRoundOverlay() {
+    if (gameOverTriggered) return;
+
     const overlay = document.getElementById("round-overlay");
     const text = document.getElementById("round-text");
 
@@ -513,9 +614,19 @@ function showRoundOverlay() {
 // Spielende
 // ------------------------------------------------------------
 function endGame() {
-    const hsBox = document.getElementById("hs-input");
-    document.getElementById("hs-score").textContent = score;
-    hsBox.style.display = "flex";
+    if (gameOverTriggered) return;
+
+    gameOverTriggered = true;
+    stopGameLoop();
+    cleanupRemainingEnemies();
+
+    const sc = score;
+
+    if (shouldAskForHighscore(sc)) {
+        showHighscoreInput(sc);
+    } else {
+        showGameOverMenu(sc);
+    }
 }
 
 // ------------------------------------------------------------
