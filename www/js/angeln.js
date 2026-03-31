@@ -3,6 +3,30 @@ document.body.classList.toggle('debug-mode', DEBUG_MODE);
 
 const FISCH_DATEN = [
   {
+    name: 'Dsungarische Zwergqualle',
+    bild: 'resources/fishes/Dsungarische Zwergqualle.jpg'
+  },
+  {
+    name: 'Seehamstern',
+    bild: 'resources/fishes/Seehamstern.jpg'
+  },
+  {
+    name: 'Haalmster',
+    bild: 'resources/fishes/Haalmster.jpg'
+  },
+  {
+    name: 'Krakster',
+    bild: 'resources/fishes/Krakster.jpg'
+  },
+  {
+    name: 'Meerjunghamster',
+    bild: 'resources/fishes/Meerjunghamster.jpg'
+  },
+  {
+    name: 'Schildhamster',
+    bild: 'resources/fishes/Schildhamster.jpg'
+  },
+  {
     name: 'Bramster',
     bild: 'resources/fishes/Bramster.jpg'
   },
