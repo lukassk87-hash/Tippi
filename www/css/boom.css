@@ -2,8 +2,8 @@
    BOOM.CSS – komplette Version
    - HUD bleibt oben rechts
    - Spielfeld respektiert Safe Areas
-   - Enemies bleiben aus Statusleiste / Nav-Leiste raus
-   - JS liest --play-top/right/bottom/left aus
+   - Game Container auf 90dvh verkleinert
+   - JS kann weiter --play-top/right/bottom/left auslesen
    - Bei Explosion blitzt der Hintergrund rot auf
 ============================================================ */
 
@@ -22,6 +22,9 @@
   --safe-right: env(safe-area-inset-right, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
+
+  --enemy-size: 75px;
+  --game-height: 90dvh;
 
   /* Spielfeld bewusst kleiner */
   --game-gap-top: 130px;
@@ -71,9 +74,10 @@ body {
 #game-container {
   position: relative;
   width: 100vw;
-  height: 100vh;
-  height: 100dvh;
-  min-height: 100dvh;
+  height: 90vh;
+  height: var(--game-height);
+  min-height: var(--game-height);
+  max-height: var(--game-height);
   background: #000;
   overflow: hidden;
 
@@ -88,8 +92,8 @@ body {
 ============================================================ */
 .enemy {
   position: absolute;
-  width: 75px;
-  height: 75px;
+  width: var(--enemy-size);
+  height: var(--enemy-size);
   cursor: pointer;
   z-index: var(--z-enemy);
   border-radius: 50%;
@@ -109,8 +113,8 @@ body {
 
 .enemy video,
 .enemy img {
-  width: 75px;
-  height: 75px;
+  width: var(--enemy-size);
+  height: var(--enemy-size);
   object-fit: contain;
   position: absolute;
   left: 50%;
