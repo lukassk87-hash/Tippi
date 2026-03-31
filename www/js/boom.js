@@ -361,7 +361,7 @@ function spawnEnemy(options = {}) {
         }, 500);
     });
 
-    const timeLimit = 2000 + Math.random() * 3000;
+    const timeLimit = 3000 + Math.random() * 3000;
 
     setTimeout(() => {
         if (gameOverTriggered) return;
