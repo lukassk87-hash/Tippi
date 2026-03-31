@@ -1,8 +1,8 @@
 /* ============================================================
-   BOOM.CSS – finale Version
+   BOOM.CSS – komplette Version
    - HUD bleibt oben rechts
-   - Spielbereich ist kleiner
-   - Enemies liegen über dem HUD
+   - Spielfeld respektiert Safe Areas
+   - Enemies bleiben aus Statusleiste / Nav-Leiste raus
    - JS liest --play-top/right/bottom/left aus
    - Bei Explosion blitzt der Hintergrund rot auf
 ============================================================ */
@@ -29,7 +29,7 @@
   --game-gap-bottom: 130px;
   --game-gap-left: 55px;
 
-  /* Diese Werte liest dein JS aus */
+  /* Diese Werte liest das JS aus */
   --play-top: calc(var(--safe-top) + var(--game-gap-top));
   --play-right: calc(var(--safe-right) + var(--game-gap-right));
   --play-bottom: calc(var(--safe-bottom) + var(--game-gap-bottom));
@@ -72,6 +72,8 @@ body {
   position: relative;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
+  min-height: 100dvh;
   background: #000;
   overflow: hidden;
 
@@ -138,7 +140,7 @@ body {
 
 @keyframes enemy-spawn {
   from {
-    transform: scale(0.0);
+    transform: scale(0);
     opacity: 0;
   }
   to {
@@ -171,8 +173,8 @@ body {
 ============================================================ */
 #hud {
   position: fixed;
-  top: 16px;
-  right: 16px;
+  top: calc(var(--safe-top) + 16px);
+  right: calc(var(--safe-right) + 16px);
   z-index: var(--z-hud);
   display: flex;
   flex-direction: column;
