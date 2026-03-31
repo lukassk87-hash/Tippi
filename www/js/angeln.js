@@ -24,7 +24,7 @@ const FISCH_DATEN = [
   },
   {
     name: 'Hunder',
-    bild: 'resources/fishes/hunder.jpg'
+    bild: 'resources/fishes/Hunder.jpg'
   }
 ];
 
