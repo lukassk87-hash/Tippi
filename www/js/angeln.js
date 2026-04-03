@@ -39,16 +39,20 @@ const FISCH_DATEN = [
     bild: 'resources/fishes/Hamsterhai.jpg'
   },
   {
-    name: 'Harelle',
+    name: 'Hamsterdelphin',
     bild: 'resources/fishes/Harelle.jpg'
   },
   {
-    name: 'Goldhamsterfisch',
+    name: 'Kaulhamster',
     bild: 'resources/fishes/Goldhamsterfisch.jpg'
   },
   {
-    name: 'Hunder',
+    name: 'Hamspferdchen',
     bild: 'resources/fishes/Hunder.jpg'
+  }, 
+  {
+    name: 'Hamsteranglerfisch',
+    bild: 'resources/fishes/Hamsteranglerfisch.jpg'
   }
 ];
 
