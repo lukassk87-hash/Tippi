@@ -52,7 +52,7 @@ const FISCH_DATEN = [
   }, 
   {
     name: 'Hamsteranglerfisch',
-    bild: 'resources/fishes/Hamsteranglerfisch.jpg'
+    bild: 'resources/fishes/Anglerhamsterfisch.jpg'
   }
 ];
 
