@@ -49,7 +49,7 @@ const FISCH_DATEN = [
   {
     name: 'Hamspferdchen',
     bild: 'resources/fishes/Hunder.jpg'
-  }, 
+  },
   {
     name: 'Hamsteranglerfisch',
     bild: 'resources/fishes/Anglerhamsterfisch.jpg'
@@ -108,7 +108,14 @@ const BLINK_PAUSE = 140;
 const SEQUENZ_LAENGE = 6;
 const OPTIMAL_FANG_MS = 300;
 const FEHLSCHLAG_FANG_MS = 500;
-const MAX_GESAMTSCORE = 300;
+
+const MAX_PHASE_SCORE = 1000;
+const MAX_GESAMTSCORE = MAX_PHASE_SCORE * 3;
+
+const WURF_SCORE_PRO_PROZENT = 30;
+const KOEDER_SCORE_PRO_PROZENT = 30;
+const FANG_SCORE_PRO_10MS = 25;
+
 const MAX_FISCH_LAENGE = 150;
 const MAX_FISCH_GEWICHT = 6000;
 const FANG_TASTEN = ['top', 'left', 'center', 'right', 'bottom'];
@@ -286,14 +293,14 @@ function resetAlles() {
   resetPhase3Anzeige();
 }
 
-function berechneScore(wert, optimal) {
-  const abweichung = Math.round(Math.abs(wert - optimal));
-  const score = Math.max(0, 100 - abweichung * 10);
+function berechneScore(wert, optimal, scoreProEinheit = WURF_SCORE_PRO_PROZENT) {
+  const abweichung = Math.abs(wert - optimal);
+  const score = Math.max(0, MAX_PHASE_SCORE - abweichung * scoreProEinheit);
 
   return {
-    wert: Math.round(wert),
-    abweichung,
-    score
+    wert: Number(wert.toFixed(1)),
+    abweichung: Number(abweichung.toFixed(1)),
+    score: Math.round(score)
   };
 }
 
@@ -390,7 +397,7 @@ function stoppeWurf() {
   wurfLaeuft = false;
   cancelAnimationFrame(wurfAnimationId);
 
-  const ergebnis = berechneScore(position, OPTIMAL_WURF);
+  const ergebnis = berechneScore(position, OPTIMAL_WURF, WURF_SCORE_PRO_PROZENT);
   scorePhase1 = ergebnis.score;
   positionText.textContent = `${ergebnis.wert}%`;
   abweichungText.textContent = `${ergebnis.abweichung}%`;
@@ -433,7 +440,7 @@ function stoppeKoeder(automatisch = false) {
   setKoederInteraktiv(false);
   cancelAnimationFrame(koederAnimationId);
 
-  const ergebnis = berechneScore(koederGroesse, OPTIMAL_KOEDER);
+  const ergebnis = berechneScore(koederGroesse, OPTIMAL_KOEDER, KOEDER_SCORE_PRO_PROZENT);
   scorePhase2 = ergebnis.score;
   koederGroesseText.textContent = `${ergebnis.wert}%`;
   koederAbweichungText.textContent = `${ergebnis.abweichung}%`;
@@ -478,15 +485,16 @@ function berechneFangScore(durchschnittMs) {
   }
 
   if (durchschnittMs <= OPTIMAL_FANG_MS) {
-    return 100;
+    return MAX_PHASE_SCORE;
   }
 
-  const abzug = Math.floor((durchschnittMs - OPTIMAL_FANG_MS) / 10);
-  return Math.max(0, 100 - abzug * 10);
+  const abweichung = durchschnittMs - OPTIMAL_FANG_MS;
+  const abzug = (abweichung / 10) * FANG_SCORE_PRO_10MS;
+  return Math.max(0, Math.round(MAX_PHASE_SCORE - abzug));
 }
 
 function zeigeFischErgebnis(overrideGesamtScore = null) {
-  const gesamtScore = overrideGesamtScore ?? (scorePhase1 + scorePhase2 + scorePhase3);
+  const gesamtScore = Math.round(overrideGesamtScore ?? (scorePhase1 + scorePhase2 + scorePhase3));
   const faktor = gesamtScore / MAX_GESAMTSCORE;
   const fischLaengeWert = Number((MAX_FISCH_LAENGE * faktor).toFixed(1));
   const fischGewichtWert = Math.round(MAX_FISCH_GEWICHT * faktor);
@@ -615,4 +623,4 @@ fangButtons.forEach((button) => {
   });
 });
 
-resetAlles();
+resetAlles(); 
