@@ -263,11 +263,8 @@ function updateUI() {
 function startRound() {
     if (gameOverTriggered) return;
 
-    const maxGeneration = round + 1;
-
     spawnEnemy({
-        generation: 1,
-        maxGeneration: maxGeneration
+        generation: 1
     });
 }
 
@@ -287,8 +284,8 @@ function checkRoundEnd() {
 function spawnEnemy(options = {}) {
     if (gameOverTriggered) return;
 
-    const generation = options.generation || 1;
-    const maxGeneration = options.maxGeneration || 2;
+    const generation = options.generation ?? 1;
+    const maxGeneration = options.maxGeneration ?? (round + 1);
     const bounds = getPlayBounds();
 
     const enemy = document.createElement("div");
@@ -352,10 +349,10 @@ function spawnEnemy(options = {}) {
                 let splitChance = 1.0;
 
                 if (gen >= 3) {
-                    if (gen === 3) splitChance = 0.7;
-                    else if (gen === 4) splitChance = 0.5;
-                    else if (gen === 5) splitChance = 0.4;
-                    else if (gen >= 6) splitChance = 0.25;
+                    if (gen === 3) splitChance = 0.9;
+                    else if (gen === 4) splitChance = 0.8;
+                    else if (gen === 5) splitChance = 0.7;
+                    else if (gen >= 6) splitChance = 0.5;
                 }
 
                 if (Math.random() < splitChance) {
